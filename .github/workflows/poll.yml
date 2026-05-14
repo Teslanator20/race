@@ -25,11 +25,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add snapshots.json
+          git add snapshots.json members_state.json events.json
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "chore: append race snapshot"
+            git commit -m "chore: append race snapshot + state"
             for i in 1 2 3; do
               git pull --rebase origin main && git push && break
               echo "Retry $i"
