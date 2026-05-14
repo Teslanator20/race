@@ -356,6 +356,15 @@
   }
   .mlist .meta b { color: var(--ink); font-weight: 600; }
   .mlist.empty { color: var(--muted); font-style: italic; padding: 16px 0; }
+  .api-off {
+    display: inline-block;
+    padding: 1px 6px; border-radius: 4px;
+    background: var(--paper-shade); border: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 10px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
 
   /* skeleton */
   .skeleton { color: var(--muted); font-style: italic; padding: 28px; text-align: center; }
@@ -380,7 +389,7 @@
     background: var(--paper-shade); border-radius: 999px;
     border: 1px solid var(--rule);
   }
-  .range-bar button {
+  .range-bar button, .range-floating button {
     background: transparent; border: 0;
     padding: 6px 13px; border-radius: 999px;
     font: 600 10.5px/1 'Inter', sans-serif;
@@ -388,17 +397,38 @@
     color: var(--muted); cursor: pointer;
     transition: background .15s, color .15s;
   }
-  .range-bar button:hover { color: var(--ink); }
-  .range-bar button.active { background: var(--card); color: var(--ink); }
-
-  .range-row {
-    margin-top: 14px;
-    display: flex; justify-content: flex-end; align-items: center;
-    gap: 12px;
+  .range-bar button:hover, .range-floating button:hover { color: var(--ink); }
+  .range-bar button.active, .range-floating button.active {
+    background: var(--paper-shade); color: var(--ink);
   }
-  .range-row .lbl {
-    font: 600 10.5px/1 'Inter', sans-serif; letter-spacing: .14em;
+
+  /* floating range bar */
+  .range-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px 5px 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.06);
+    backdrop-filter: blur(8px);
+    transition: opacity .2s, transform .2s;
+  }
+  html[data-theme="dark"] .range-floating {
+    box-shadow: 0 6px 22px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .range-floating .lbl-mini {
+    font: 600 10px/1 'Inter', sans-serif; letter-spacing: .16em;
     text-transform: uppercase; color: var(--muted);
+  }
+  @media (max-width: 720px) {
+    .range-floating { bottom: 14px; right: 14px; padding: 4px 4px 4px 11px; }
+    .range-floating .lbl-mini { display: none; }
   }
 
   /* ── spotlight ──────────────────────────────── */
@@ -548,15 +578,15 @@
       <span>Updated <strong id="updated">…</strong></span>
       <span>Refreshes every 5 minutes</span>
     </div>
-    <div class="range-row">
-      <span class="lbl">View range</span>
-      <div class="range-bar" id="range-bar">
-        <button data-range="1">24h</button>
-        <button data-range="7" class="active">7d</button>
-        <button data-range="14">14d</button>
-      </div>
-    </div>
   </header>
+
+  <!-- floating range bar (visible everywhere on page) -->
+  <div class="range-floating" id="range-bar">
+    <span class="lbl-mini">View</span>
+    <button data-range="1">24h</button>
+    <button data-range="7" class="active">7d</button>
+    <button data-range="14">14d</button>
+  </div>
 
   <!-- HERO -->
   <section class="hero" id="hero">
@@ -1284,14 +1314,19 @@ function renderMembersFromState(state, eventsLog) {
     if (!joined.length) {
       jList.innerHTML = `<li class="empty">no joins in last 14 days</li>`;
     } else {
-      jList.innerHTML = joined.slice(0, 12).map(m => `
-        <li>
+      jList.innerHTML = joined.slice(0, 12).map(m => {
+        const apiOff = (m.guildRaidsTotal ?? 0) === 0;
+        const raidsCell = apiOff
+          ? `<span class="api-off" title="member has 0 tracked raids — likely API access disabled">API off</span>`
+          : `<b>${fmt(m.guildRaidsTotal)}</b> raids`;
+        return `<li>
           <div>
             <span class="uname">${m.username}</span>
             <span class="rank-tag">${m.rank}</span>
           </div>
-          <div class="meta">${timeAgo(m.joined)} · <b>${fmt(m.guildRaidsTotal)}</b> raids</div>
-        </li>`).join("");
+          <div class="meta">${timeAgo(m.joined)} · ${raidsCell}</div>
+        </li>`;
+      }).join("");
     }
 
     // events for this guild
