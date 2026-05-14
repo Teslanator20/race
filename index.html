@@ -501,7 +501,7 @@
   <div class="table-wrap">
     <div class="col-explain">
       <b>Completions</b> = total times the raid has been finished this season ·
-      <b>G / Raid</b> = average gambits used per completion ·
+      <b>G / Raid</b> = average gambits per player per completion (total gambits ÷ completions ÷ 4) ·
       <b>Gap</b> = SR difference between the two guilds
     </div>
     <table class="raidtable">
@@ -877,8 +877,8 @@ function renderRaidTable(cur) {
     const gapCls = gap >= 0 ? "left" : "right";
     const lComp = L?.completions ?? 0, rComp = R?.completions ?? 0;
     const lG = L?.gambits ?? 0, rG = R?.gambits ?? 0;
-    const lAvg = lComp ? (lG / lComp) : 0;
-    const rAvg = rComp ? (rG / rComp) : 0;
+    const lAvg = lComp ? (lG / lComp / 4) : 0;
+    const rAvg = rComp ? (rG / rComp / 4) : 0;
     return `<tr>
       <td><span class="raid-name">${r.label}</span></td>
       <td class="num left">${fmt(lSr)} <span class="raid-meta">${L?.rank ? "#"+L.rank : "—"}</span></td>
@@ -901,8 +901,8 @@ function renderRaidTable(cur) {
   }, { lSr: 0, rSr: 0, lComp: 0, rComp: 0, lG: 0, rG: 0 });
   const totalGap = totals.lSr - totals.rSr;
   const totalCls = totalGap >= 0 ? "left" : "right";
-  const lAvg = totals.lComp ? totals.lG / totals.lComp : 0;
-  const rAvg = totals.rComp ? totals.rG / totals.rComp : 0;
+  const lAvg = totals.lComp ? totals.lG / totals.lComp / 4 : 0;
+  const rAvg = totals.rComp ? totals.rG / totals.rComp / 4 : 0;
   tbody.insertAdjacentHTML("beforeend", `<tr style="border-top:1px solid var(--rule)">
     <td><span class="raid-name">All raids</span></td>
     <td class="num left">${fmt(totals.lSr)}</td>
