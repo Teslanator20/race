@@ -304,7 +304,7 @@
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 
-  .raid-trends { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .raid-trends { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .rt-card {
     background: var(--card); border: 1px solid var(--rule);
     border-radius: 10px; padding: 14px;
@@ -370,6 +370,44 @@
   @media (max-width: 900px) {
     .raid-trends { grid-template-columns: repeat(2, 1fr); }
   }
+  @media (max-width: 600px) {
+    .raid-trends { grid-template-columns: 1fr; }
+  }
+
+  /* range bar */
+  .range-bar {
+    display: inline-flex; gap: 2px; padding: 3px;
+    background: var(--paper-shade); border-radius: 999px;
+    border: 1px solid var(--rule);
+  }
+  .range-bar button {
+    background: transparent; border: 0;
+    padding: 6px 13px; border-radius: 999px;
+    font: 600 10.5px/1 'Inter', sans-serif;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .range-bar button:hover { color: var(--ink); }
+  .range-bar button.active { background: var(--card); color: var(--ink); }
+
+  .range-row {
+    margin-top: 14px;
+    display: flex; justify-content: flex-end; align-items: center;
+    gap: 12px;
+  }
+  .range-row .lbl {
+    font: 600 10.5px/1 'Inter', sans-serif; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* table caption */
+  .col-explain {
+    font-size: 11px; color: var(--muted);
+    padding: 0 0 10px 0; margin-bottom: 2px;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .col-explain b { color: var(--ink); font-weight: 600; }
   @media (max-width: 720px) {
     .wrap { padding: 32px 18px 56px; }
     .theme-toggle { top: 20px; right: 18px; }
@@ -398,6 +436,14 @@
       <span><strong id="left-name">—</strong> vs <strong id="right-name">—</strong></span>
       <span>Updated <strong id="updated">…</strong></span>
       <span>Refreshes every 5 minutes</span>
+    </div>
+    <div class="range-row">
+      <span class="lbl">View range</span>
+      <div class="range-bar" id="range-bar">
+        <button data-range="1">24h</button>
+        <button data-range="7" class="active">7d</button>
+        <button data-range="14">14d</button>
+      </div>
     </div>
   </header>
 
@@ -453,17 +499,22 @@
   <!-- PER-RAID -->
   <h2>Per-raid Seasonal Rating</h2>
   <div class="table-wrap">
+    <div class="col-explain">
+      <b>Completions</b> = total times the raid has been finished this season ·
+      <b>G / Raid</b> = average gambits used per completion ·
+      <b>Gap</b> = SR difference between the two guilds
+    </div>
     <table class="raidtable">
       <thead>
         <tr>
           <th>Raid</th>
-          <th class="num" id="thd-left-sr">L SR</th>
-          <th class="num" id="thd-right-sr">R SR</th>
+          <th class="num" id="thd-left-sr">SR</th>
+          <th class="num" id="thd-right-sr">SR</th>
           <th class="num">Gap</th>
-          <th class="num">L Compl.</th>
-          <th class="num">R Compl.</th>
-          <th class="num">L Avg Gambits</th>
-          <th class="num">R Avg Gambits</th>
+          <th class="num" id="thd-left-comp">Compl.</th>
+          <th class="num" id="thd-right-comp">Compl.</th>
+          <th class="num" id="thd-left-gpr">G / Raid</th>
+          <th class="num" id="thd-right-gpr">G / Raid</th>
         </tr>
       </thead>
       <tbody id="raid-body"><tr><td colspan="8" class="skeleton">loading…</td></tr></tbody>
@@ -471,7 +522,7 @@
   </div>
 
   <!-- PER-RAID TRENDS -->
-  <h2>Per-raid SR — last 7 days</h2>
+  <h2 id="h2-per-raid-trends">Per-raid SR — last 7 days</h2>
   <section class="raid-trends" id="raid-trends">
     <div class="rt-card"><div class="rt-title">Grootslang</div><div class="rt-canvas"><canvas id="rt-grootslang"></canvas></div></div>
     <div class="rt-card"><div class="rt-title">Nameless (TNA)</div><div class="rt-canvas"><canvas id="rt-nameless"></canvas></div></div>
@@ -484,7 +535,7 @@
   <h2>Trends</h2>
   <section class="charts">
     <div class="ccard full">
-      <div class="ccard-title">Season SR — last 7 days
+      <div class="ccard-title" id="t-sr">Season SR — last 7 days
         <span class="legend">
           <span><span class="dot" style="background:var(--left)"></span><span id="lg-left-1">Left</span></span>
           <span><span class="dot" style="background:var(--right)"></span><span id="lg-right-1">Right</span></span>
@@ -641,6 +692,34 @@ const RAIDS = [
 // ─── State ─────────────────────────────────────────────
 const charts = {};
 let lastData = null;
+let lastMembers = null;
+let lastEvents  = null;
+let rangeDays = Number(localStorage.getItem("rangeDays") || 7);
+
+// init range bar
+(function () {
+  document.querySelectorAll("#range-bar button").forEach(b => {
+    if (Number(b.dataset.range) === rangeDays) {
+      b.classList.add("active");
+    } else {
+      b.classList.remove("active");
+    }
+    b.addEventListener("click", () => {
+      rangeDays = Number(b.dataset.range);
+      localStorage.setItem("rangeDays", String(rangeDays));
+      document.querySelectorAll("#range-bar button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      if (lastData) {
+        render(lastData);
+        renderMembersFromState(lastMembers, lastEvents);
+      }
+    });
+  });
+})();
+
+function rangeLabel() {
+  return rangeDays === 1 ? "24 h" : `${rangeDays} d`;
+}
 
 // ─── Sections ──────────────────────────────────────────
 function renderGuildCard(elId, side, cur, snaps) {
@@ -781,8 +860,14 @@ function renderHero(cur, snaps) {
 
 function renderRaidTable(cur) {
   const tbody = document.getElementById("raid-body");
-  document.getElementById("thd-left-sr").textContent  = `${cur.left.prefix || "L"} SR`;
-  document.getElementById("thd-right-sr").textContent = `${cur.right.prefix || "R"} SR`;
+  const lp = cur.left.prefix || cur.left.name || "L";
+  const rp = cur.right.prefix || cur.right.name || "R";
+  document.getElementById("thd-left-sr").textContent   = `${lp} SR`;
+  document.getElementById("thd-right-sr").textContent  = `${rp} SR`;
+  document.getElementById("thd-left-comp").textContent = `${lp} Compl.`;
+  document.getElementById("thd-right-comp").textContent= `${rp} Compl.`;
+  document.getElementById("thd-left-gpr").textContent  = `${lp} G / Raid`;
+  document.getElementById("thd-right-gpr").textContent = `${rp} G / Raid`;
 
   tbody.innerHTML = RAIDS.map(r => {
     const L = cur.left.perRaid?.[r.key];
@@ -887,7 +972,7 @@ function drawSpark(snaps) {
   destroyChart("spark");
   if (snaps.length < 2) return;
   const c = colors();
-  const pts = downsample(recentSnaps(snaps, 7), 60);
+  const pts = downsample(recentSnaps(snaps, rangeDays), 60);
   const data = pts.map(s => s.left.seasonSr - s.right.seasonSr);
   const ctx = document.getElementById("spark-gap").getContext("2d");
   charts.spark = new Chart(ctx, {
@@ -900,7 +985,7 @@ function drawSpark(snaps) {
   });
 }
 
-function lineChart(key, canvasId, snaps, leftAccess, rightAccess, days = 7) {
+function lineChart(key, canvasId, snaps, leftAccess, rightAccess, days = rangeDays) {
   destroyChart(key);
   if (snaps.length < 2) return;
   const c = colors();
@@ -921,14 +1006,14 @@ function lineChart(key, canvasId, snaps, leftAccess, rightAccess, days = 7) {
 }
 
 function drawSrLine(snaps) {
-  lineChart("sr", "ch-sr", snaps, s => s.left.seasonSr, s => s.right.seasonSr, 7);
+  lineChart("sr", "ch-sr", snaps, s => s.left.seasonSr, s => s.right.seasonSr, rangeDays);
 }
 
 function drawGapLine(snaps) {
   destroyChart("gap");
   if (snaps.length < 2) return;
   const c = colors();
-  const pts = downsample(recentSnaps(snaps, 7), 200);
+  const pts = downsample(recentSnaps(snaps, rangeDays), 200);
   const ctx = document.getElementById("ch-gap").getContext("2d");
   charts.gap = new Chart(ctx, {
     type: "line",
@@ -981,7 +1066,7 @@ function bucketByDay(snaps) {
 function drawRaidsPerDay(snaps) {
   destroyChart("raidsDay");
   const c = colors();
-  const days = bucketByDay(snaps);
+  const days = bucketByDay(recentSnaps(snaps, rangeDays + 1));
   if (days.length < 2) return;
   const labels = [], lData = [], rData = [];
   for (let i = 1; i < days.length; i++) {
@@ -1006,7 +1091,7 @@ function drawDailyBreakdown(side, canvasId, snaps) {
   const key = `daily-${side}`;
   destroyChart(key);
   const c = colors();
-  const days = bucketByDay(snaps);
+  const days = bucketByDay(recentSnaps(snaps, rangeDays + 1));
   if (days.length < 2) return;
   const labels = [];
   const datasets = RAIDS.map((r, i) => {
@@ -1049,7 +1134,7 @@ function withAlpha(rgbStr, alpha) {
 function drawPerRaidTrends(snaps) {
   if (snaps.length < 2) return;
   const c = colors();
-  const pts = downsample(recentSnaps(snaps, 7), 120);
+  const pts = downsample(recentSnaps(snaps, rangeDays), 120);
   RAIDS.forEach(r => {
     const key = `rt-${r.key}`;
     destroyChart(key);
@@ -1123,10 +1208,10 @@ function renderMembersFromState(state, eventsLog) {
 }
 
 function drawOnlineSeries(snaps) {
-  lineChart("online", "ch-online", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, 7);
+  lineChart("online", "ch-online", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, rangeDays);
 }
 function drawTerritories(snaps) {
-  lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, 14);
+  lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, rangeDays);
 }
 
 // ─── Main render ───────────────────────────────────────
@@ -1144,6 +1229,13 @@ function render(data) {
   document.getElementById("lg-left-2").textContent  = cur.left.name;
   document.getElementById("t-daily-left").textContent  = `Daily raids — ${cur.left.name}`;
   document.getElementById("t-daily-right").textContent = `Daily raids — ${cur.right.name}`;
+  document.getElementById("h2-per-raid-trends").textContent = `Per-raid SR — last ${rangeLabel()}`;
+  const tsr = document.getElementById("t-sr");
+  if (tsr) {
+    const legend = tsr.querySelector(".legend");
+    tsr.firstChild.textContent = `Season SR — last ${rangeLabel()} `;
+    if (legend) tsr.appendChild(legend);
+  }
   document.getElementById("updated").textContent    = timeAgo(data.updated || cur.ts);
 
   renderHero(cur, snaps);
@@ -1175,6 +1267,8 @@ async function load() {
     let memberState = null, eventsLog = null;
     try { if (memRes && memRes.ok) memberState = await memRes.json(); } catch {}
     try { if (evRes  && evRes.ok)  eventsLog   = await evRes.json();  } catch {}
+    lastMembers = memberState;
+    lastEvents  = eventsLog;
     render(data);
     renderMembersFromState(memberState, eventsLog);
   } catch (e) {
