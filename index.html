@@ -401,13 +401,124 @@
     text-transform: uppercase; color: var(--muted);
   }
 
-  /* table caption */
-  .col-explain {
-    font-size: 11px; color: var(--muted);
-    padding: 0 0 10px 0; margin-bottom: 2px;
+  /* ── spotlight ──────────────────────────────── */
+  .spotlights { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .spot {
+    background: var(--card); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 24px 28px;
+  }
+  .spot-head {
+    display: flex; align-items: baseline; gap: 14px;
+    padding-bottom: 14px; margin-bottom: 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .spot-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-variation-settings: 'opsz' 96, 'wght' 540;
+    font-size: 24px; color: var(--ink);
+  }
+  .spot-sub {
+    font: 500 11px/1 'Inter', sans-serif; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-left: auto;
+  }
+  .spot-grid {
+    display: grid; grid-template-columns: 1fr 1.3fr; gap: 28px;
+    align-items: stretch;
+  }
+  .spot-side { display: flex; flex-direction: column; gap: 12px; }
+  .spot-row {
+    display: grid; grid-template-columns: 1fr auto auto;
+    align-items: baseline; gap: 12px;
+    padding: 8px 0; border-bottom: 1px dotted var(--rule);
+  }
+  .spot-row:last-child { border-bottom: 0; }
+  .spot-row .gname {
+    font-family: 'Fraunces', Georgia, serif; font-size: 17px;
+    font-variation-settings: 'opsz' 24, 'wght' 540;
+  }
+  .spot-row.left  .gname { color: var(--left); }
+  .spot-row.right .gname { color: var(--right); }
+  .spot-row .val {
+    font-size: 22px; font-weight: 600;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink); letter-spacing: -.01em;
+  }
+  .spot-row .rk {
+    font-size: 11px; color: var(--muted); font-weight: 500;
+  }
+  .spot-gap-block {
+    margin-top: 6px; padding: 14px 16px;
+    background: var(--paper-shade); border-radius: 10px;
+  }
+  .spot-gap-label {
+    font: 600 10.5px/1 'Inter', sans-serif; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .spot-gap-val {
+    font-family: 'Fraunces', Georgia, serif;
+    font-variation-settings: 'opsz' 96, 'wght' 500;
+    font-size: 30px; line-height: 1;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink);
+  }
+  .spot-gap-meta {
+    margin-top: 8px; font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 12px;
+  }
+  .spot-gap-meta .pill {
+    padding: 2px 8px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  .spot-gap-meta .pill.up   { color: var(--up); }
+  .spot-gap-meta .pill.down { color: var(--down); }
+
+  .spot-chart { height: 220px; position: relative; }
+
+  .spot-bottom {
+    margin-top: 18px; padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    display: grid; grid-template-columns: 2fr 1fr; gap: 24px;
+  }
+  .spot-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
+  .spot-table th {
+    text-align: left; font: 600 10.5px/1 'Inter', sans-serif;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); padding: 6px 8px 8px 0;
+  }
+  .spot-table th.num { text-align: right; padding-right: 8px; padding-left: 4px; }
+  .spot-table td {
+    padding: 8px 8px 8px 0; font-size: 13.5px;
     border-bottom: 1px dotted var(--rule);
   }
-  .col-explain b { color: var(--ink); font-weight: 600; }
+  .spot-table td.num { text-align: right; padding-right: 8px; padding-left: 4px; font-weight: 600; }
+  .spot-table tr:last-child td { border-bottom: 0; }
+  .spot-table td.left  { color: var(--left);  font-weight: 600; }
+  .spot-table td.right { color: var(--right); font-weight: 600; }
+  .spot-gambits {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .spot-gambits .lbl {
+    font: 600 10.5px/1 'Inter', sans-serif; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+  }
+  .spot-gambits .gline {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 14px; padding: 5px 0;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .spot-gambits .gline:last-child { border-bottom: 0; }
+  .spot-gambits .gline .who.left  { color: var(--left); font-weight: 600; }
+  .spot-gambits .gline .who.right { color: var(--right); font-weight: 600; }
+  .spot-gambits .gline .gv {
+    font-weight: 600; font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  @media (max-width: 820px) {
+    .spot-grid   { grid-template-columns: 1fr; }
+    .spot-chart  { height: 180px; }
+    .spot-bottom { grid-template-columns: 1fr; gap: 18px; }
+  }
   @media (max-width: 720px) {
     .wrap { padding: 32px 18px 56px; }
     .theme-toggle { top: 20px; right: 18px; }
@@ -466,6 +577,13 @@
     </div>
   </section>
 
+  <!-- SPOTLIGHT -->
+  <h2>Race Spotlight</h2>
+  <section class="spotlights">
+    <div class="spot" id="spot-sr"><div class="skeleton">loading…</div></div>
+    <div class="spot" id="spot-tna"><div class="skeleton">loading…</div></div>
+  </section>
+
   <!-- SNAPSHOT -->
   <h2>Snapshot</h2>
   <section class="compare">
@@ -499,11 +617,6 @@
   <!-- PER-RAID -->
   <h2>Per-raid Seasonal Rating</h2>
   <div class="table-wrap">
-    <div class="col-explain">
-      <b>Completions</b> = total times the raid has been finished this season ·
-      <b>G / Raid</b> = average gambits per player per completion (total gambits ÷ completions ÷ 4) ·
-      <b>Gap</b> = SR difference between the two guilds
-    </div>
     <table class="raidtable">
       <thead>
         <tr>
@@ -866,8 +979,8 @@ function renderRaidTable(cur) {
   document.getElementById("thd-right-sr").textContent  = `${rp} SR`;
   document.getElementById("thd-left-comp").textContent = `${lp} Compl.`;
   document.getElementById("thd-right-comp").textContent= `${rp} Compl.`;
-  document.getElementById("thd-left-gpr").textContent  = `${lp} G / Raid`;
-  document.getElementById("thd-right-gpr").textContent = `${rp} G / Raid`;
+  document.getElementById("thd-left-gpr").textContent  = `${lp} Gambits`;
+  document.getElementById("thd-right-gpr").textContent = `${rp} Gambits`;
 
   tbody.innerHTML = RAIDS.map(r => {
     const L = cur.left.perRaid?.[r.key];
@@ -886,8 +999,8 @@ function renderRaidTable(cur) {
       <td class="num gap ${gapCls}">${gap >= 0 ? "+" : "−"}${fmt(Math.abs(gap))}</td>
       <td class="num">${fmt(lComp)}</td>
       <td class="num">${fmt(rComp)}</td>
-      <td class="num">${lAvg.toFixed(1)}</td>
-      <td class="num">${rAvg.toFixed(1)}</td>
+      <td class="num">${lAvg.toFixed(2)}</td>
+      <td class="num">${rAvg.toFixed(2)}</td>
     </tr>`;
   }).join("");
 
@@ -910,8 +1023,8 @@ function renderRaidTable(cur) {
     <td class="num gap ${totalCls}">${totalGap >= 0 ? "+" : "−"}${fmt(Math.abs(totalGap))}</td>
     <td class="num">${fmt(totals.lComp)}</td>
     <td class="num">${fmt(totals.rComp)}</td>
-    <td class="num">${lAvg.toFixed(1)}</td>
-    <td class="num">${rAvg.toFixed(1)}</td>
+    <td class="num">${lAvg.toFixed(2)}</td>
+    <td class="num">${rAvg.toFixed(2)}</td>
   </tr>`);
 }
 
@@ -1207,6 +1320,210 @@ function renderMembersFromState(state, eventsLog) {
   }
 }
 
+// ─── Spotlight (SR / TNA detailed race) ──────────────────────
+function computeRace(snaps, getL, getR, days) {
+  // returns { dayRate, etaText, etaSub, trendDir, trendDelta }
+  if (snaps.length < 2) return null;
+  const cur  = snaps[snaps.length - 1];
+  const past = snapshotsBefore(snaps, days * 86400_000);
+  if (!past) return null;
+  const gap_now  = getL(cur)  - getR(cur);
+  const gap_past = getL(past) - getR(past);
+  const dt = (new Date(cur.ts) - new Date(past.ts)) / 86400_000;
+  const dayRate = dt > 0 ? (gap_now - gap_past) / dt : 0;
+  const trendDelta = gap_now - gap_past;
+  const shrinking = (gap_now > 0 && dayRate < 0) || (gap_now < 0 && dayRate > 0);
+  let etaText = "—", etaSub = "need more data";
+  if (shrinking) {
+    const d = Math.abs(gap_now) / Math.abs(dayRate);
+    etaText = d < 1 ? `~ ${(d*24).toFixed(1)} h` : `~ ${d.toFixed(1)} d`;
+    etaSub = `closing (${days}d trend)`;
+  } else if (Math.abs(dayRate) < 1) {
+    etaText = "stable";
+    etaSub = `flat (${days}d trend)`;
+  } else {
+    etaText = "pulling away";
+    etaSub  = `widening (${days}d trend)`;
+  }
+  return { dayRate, etaText, etaSub, trendDelta };
+}
+
+function deltaPerRaid(snaps, side, raidKey, field, msAgo) {
+  if (!snaps.length) return null;
+  const cur = snaps[snaps.length - 1];
+  const past = snapshotsBefore(snaps, msAgo);
+  if (!past) return null;
+  const a = cur[side]?.perRaid?.[raidKey]?.[field];
+  const b = past[side]?.perRaid?.[raidKey]?.[field];
+  if (a == null || b == null) return null;
+  return a - b;
+}
+
+function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftName, rightName,
+                      gapHistory, completionsRow, gambitsLeft, gambitsRight, snaps, getL, getR, chartKey, valLabel }) {
+  const cur = snaps[snaps.length - 1];
+  const gap = leftVal - rightVal;
+  const leader = gap >= 0 ? leftName : rightName;
+  const leaderCol = gap >= 0 ? cssVar("--left") : cssVar("--right");
+
+  const r24 = computeRace(snaps, getL, getR, 1);
+  const r7  = computeRace(snaps, getL, getR, 7);
+  const best = r7 || r24;
+  const trendCls = (best?.trendDelta ?? 0) === 0 ? "" :
+                   ((gap >= 0 && best.trendDelta > 0) || (gap < 0 && best.trendDelta < 0)) ? "up" : "down";
+  const trendText = best ? fmtSigned(best.trendDelta) : "—";
+
+  const el = document.getElementById(elId);
+  el.innerHTML = `
+    <div class="spot-head">
+      <span class="spot-title">${title}</span>
+      <span class="spot-sub">${leader} leads</span>
+    </div>
+    <div class="spot-grid">
+      <div class="spot-side">
+        <div class="spot-row left">
+          <span class="gname">${leftName}</span>
+          <span class="val">${fmt(leftVal)}</span>
+          <span class="rk">${leftRank ? "#" + leftRank : ""}</span>
+        </div>
+        <div class="spot-row right">
+          <span class="gname">${rightName}</span>
+          <span class="val">${fmt(rightVal)}</span>
+          <span class="rk">${rightRank ? "#" + rightRank : ""}</span>
+        </div>
+        <div class="spot-gap-block">
+          <div class="spot-gap-label">Gap (${valLabel})</div>
+          <div class="spot-gap-val">${gap >= 0 ? "+" : "−"}${fmt(Math.abs(gap))}</div>
+          <div class="spot-gap-meta">
+            <span class="pill ${trendCls}">${best ? `${trendText} in ${best === r7 ? "7d" : "24h"}` : "—"}</span>
+            <span class="pill">${best ? `rate ${fmtSigned(Math.round(best.dayRate))}/day` : "—"}</span>
+            <span class="pill">ETA: <b>${best?.etaText ?? "—"}</b></span>
+          </div>
+        </div>
+      </div>
+      <div class="spot-chart"><canvas id="${chartKey}-canvas"></canvas></div>
+    </div>
+    <div class="spot-bottom">
+      <table class="spot-table">
+        <thead>
+          <tr>
+            <th>Completions</th>
+            <th class="num">24h</th>
+            <th class="num">7d</th>
+            <th class="num">14d</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="left">${leftName}</td>
+            <td class="num">${completionsRow.left[0] == null ? "—" : fmt(completionsRow.left[0])}</td>
+            <td class="num">${completionsRow.left[1] == null ? "—" : fmt(completionsRow.left[1])}</td>
+            <td class="num">${completionsRow.left[2] == null ? "—" : fmt(completionsRow.left[2])}</td>
+          </tr>
+          <tr>
+            <td class="right">${rightName}</td>
+            <td class="num">${completionsRow.right[0] == null ? "—" : fmt(completionsRow.right[0])}</td>
+            <td class="num">${completionsRow.right[1] == null ? "—" : fmt(completionsRow.right[1])}</td>
+            <td class="num">${completionsRow.right[2] == null ? "—" : fmt(completionsRow.right[2])}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="spot-gambits">
+        <div class="lbl">Gambits / raid</div>
+        <div class="gline"><span class="who left">${leftName}</span>  <span class="gv">${gambitsLeft.toFixed(2)}</span></div>
+        <div class="gline"><span class="who right">${rightName}</span><span class="gv">${gambitsRight.toFixed(2)}</span></div>
+      </div>
+    </div>
+  `;
+
+  // chart: gap over time
+  destroyChart(chartKey);
+  if (snaps.length < 2) return;
+  const c = colors();
+  const pts = downsample(recentSnaps(snaps, rangeDays), 200);
+  const ctx = document.getElementById(`${chartKey}-canvas`).getContext("2d");
+  charts[chartKey] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: pts.map(s => timeLabel(s.ts)),
+      datasets: [{
+        label: `${leftName} − ${rightName}`,
+        data: pts.map(s => getL(s) - getR(s)),
+        borderColor: c.ink, backgroundColor: "transparent",
+        borderWidth: 2, pointRadius: 0, tension: .25,
+      }],
+    },
+    options: { ...baseOpts(c),
+               scales: { ...baseOpts(c).scales,
+                         y: { ...baseOpts(c).scales.y,
+                              grid: { ...baseOpts(c).scales.y.grid,
+                                      color: (ctx) => ctx.tick.value === 0 ? c.ink : c.grid,
+                                      lineWidth: (ctx) => ctx.tick.value === 0 ? 1.5 : 1 } } } },
+  });
+}
+
+function renderSrSpotlight(cur, snaps) {
+  renderSpot({
+    elId: "spot-sr",
+    title: "Season SR",
+    leftName: cur.left.name,
+    rightName: cur.right.name,
+    leftVal: cur.left.seasonSr,
+    rightVal: cur.right.seasonSr,
+    leftRank: null, rightRank: null,
+    completionsRow: {
+      left:  [delta(snaps, "left.raids",  86400_000), delta(snaps, "left.raids",  7*86400_000),  delta(snaps, "left.raids",  14*86400_000)],
+      right: [delta(snaps, "right.raids", 86400_000), delta(snaps, "right.raids", 7*86400_000),  delta(snaps, "right.raids", 14*86400_000)],
+    },
+    gambitsLeft:  totalGambitsPerRaid(cur, "left"),
+    gambitsRight: totalGambitsPerRaid(cur, "right"),
+    snaps,
+    getL: s => s.left.seasonSr,
+    getR: s => s.right.seasonSr,
+    chartKey: "spot-sr-chart",
+    valLabel: "Season SR",
+  });
+}
+
+function renderTnaSpotlight(cur, snaps) {
+  const lTna = cur.left.perRaid?.nameless;
+  const rTna = cur.right.perRaid?.nameless;
+  renderSpot({
+    elId: "spot-tna",
+    title: "Nameless Anomaly (TNA)",
+    leftName: cur.left.name,
+    rightName: cur.right.name,
+    leftVal:  lTna?.sr ?? 0,
+    rightVal: rTna?.sr ?? 0,
+    leftRank:  lTna?.rank,
+    rightRank: rTna?.rank,
+    completionsRow: {
+      left:  [deltaPerRaid(snaps, "left",  "nameless", "completions", 86400_000),
+              deltaPerRaid(snaps, "left",  "nameless", "completions", 7*86400_000),
+              deltaPerRaid(snaps, "left",  "nameless", "completions", 14*86400_000)],
+      right: [deltaPerRaid(snaps, "right", "nameless", "completions", 86400_000),
+              deltaPerRaid(snaps, "right", "nameless", "completions", 7*86400_000),
+              deltaPerRaid(snaps, "right", "nameless", "completions", 14*86400_000)],
+    },
+    gambitsLeft:  lTna?.completions ? (lTna.gambits / lTna.completions / 4) : 0,
+    gambitsRight: rTna?.completions ? (rTna.gambits / rTna.completions / 4) : 0,
+    snaps,
+    getL: s => s.left.perRaid?.nameless?.sr  ?? 0,
+    getR: s => s.right.perRaid?.nameless?.sr ?? 0,
+    chartKey: "spot-tna-chart",
+    valLabel: "TNA SR",
+  });
+}
+
+function totalGambitsPerRaid(cur, side) {
+  let g = 0, c = 0;
+  for (const r of RAIDS) {
+    g += cur[side]?.perRaid?.[r.key]?.gambits ?? 0;
+    c += cur[side]?.perRaid?.[r.key]?.completions ?? 0;
+  }
+  return c ? g / c / 4 : 0;
+}
+
 function drawOnlineSeries(snaps) {
   lineChart("online", "ch-online", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, rangeDays);
 }
@@ -1239,6 +1556,8 @@ function render(data) {
   document.getElementById("updated").textContent    = timeAgo(data.updated || cur.ts);
 
   renderHero(cur, snaps);
+  renderSrSpotlight(cur, snaps);
+  renderTnaSpotlight(cur, snaps);
   renderGuildCard("card-left",  "left",  cur, snaps);
   renderGuildCard("card-right", "right", cur, snaps);
   renderActivity(cur, snaps);
