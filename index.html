@@ -294,6 +294,14 @@
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   }
   .ccard-canvas { position: relative; height: 240px; }
+  .ccard-canvas.empty::after {
+    content: attr(data-empty);
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-style: italic; font-size: 13px;
+    text-align: center; padding: 0 20px;
+  }
+  .ccard-canvas.empty canvas { opacity: 0; }
   .ccard.full .ccard-canvas { height: 300px; }
 
   .legend {
@@ -742,9 +750,11 @@
       <ul class="mlist" id="m-left-joined"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recent rank changes</div>
       <ul class="mlist" id="m-left-events"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recently left</div>
+      <ul class="mlist" id="m-left-leavers"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Top contributors (XP)</div>
       <ul class="mlist" id="m-left-contribs"><li class="skeleton">loading…</li></ul>
-      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders</div>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders <span style="color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px">· last 7d</span></div>
       <ul class="mlist" id="m-left-active"><li class="skeleton">loading…</li></ul>
     </div>
     <div class="mcard right">
@@ -756,9 +766,11 @@
       <ul class="mlist" id="m-right-joined"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recent rank changes</div>
       <ul class="mlist" id="m-right-events"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recently left</div>
+      <ul class="mlist" id="m-right-leavers"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Top contributors (XP)</div>
       <ul class="mlist" id="m-right-contribs"><li class="skeleton">loading…</li></ul>
-      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders</div>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders <span style="color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px">· last 7d</span></div>
       <ul class="mlist" id="m-right-active"><li class="skeleton">loading…</li></ul>
     </div>
   </section>
@@ -860,6 +872,7 @@ const charts = {};
 let lastData = null;
 let lastMembers = null;
 let lastEvents  = null;
+let lastMemberRaids = null;
 let rangeDays = Number(localStorage.getItem("rangeDays") || 7);
 
 // init range bar
@@ -1108,9 +1121,10 @@ function baseOpts(c) {
       },
     },
     scales: {
-      x: { ticks: { color: c.muted, font: { family: "Inter", size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+      x: { ticks: { color: c.muted, font: { family: "Inter", size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8, padding: 6 },
            grid: { color: c.gridMute, drawTicks: false }, border: { color: c.gridMute } },
-      y: { ticks: { color: c.muted, font: { family: "Inter", size: 10 }, callback: v => Number(v).toLocaleString("en-US") },
+      y: { grace: '8%',
+           ticks: { color: c.muted, font: { family: "Inter", size: 10 }, callback: v => Number(v).toLocaleString("en-US"), padding: 6 },
            grid: { color: c.grid, drawTicks: false }, border: { color: c.gridMute } },
     },
   };
@@ -1248,11 +1262,20 @@ function bucketByDay(snaps) {
   return [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+function setEmpty(canvasId, msg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  if (msg) { wrap.classList.add("empty"); wrap.setAttribute("data-empty", msg); }
+  else     { wrap.classList.remove("empty"); wrap.removeAttribute("data-empty"); }
+}
+
 function drawRaidsPerDay(snaps) {
   destroyChart("raidsDay");
   const c = colors();
   const days = bucketByDay(recentSnaps(snaps, rangeDays + 1));
-  if (days.length < 2) return;
+  if (days.length < 2) { setEmpty("ch-raids-day", "Need ≥ 2 days of snapshots to draw daily totals"); return; }
+  setEmpty("ch-raids-day", null);
   const labels = [], lData = [], rData = [];
   for (let i = 1; i < days.length; i++) {
     const prev = days[i-1][1], cur = days[i][1];
@@ -1277,7 +1300,8 @@ function drawDailyBreakdown(side, canvasId, snaps) {
   destroyChart(key);
   const c = colors();
   const days = bucketByDay(recentSnaps(snaps, rangeDays + 1));
-  if (days.length < 2) return;
+  if (days.length < 2) { setEmpty(canvasId, "Need ≥ 2 days for daily breakdown"); return; }
+  setEmpty(canvasId, null);
   const labels = [];
   const datasets = RAIDS.map((r, i) => {
     const shade = 0.45 + (i * 0.13);
@@ -1384,41 +1408,79 @@ function renderMembersFromState(state, eventsLog) {
         </li>`).join("")
       : `<li class="empty">no contributors yet</li>`;
 
-    // most active raiders (by guildRaidsTotal)
-    const active = [...(g.members || [])]
-      .filter(m => (m.guildRaidsTotal ?? 0) > 0)
-      .sort((a, b) => (b.guildRaidsTotal ?? 0) - (a.guildRaidsTotal ?? 0))
+    // most active raiders — recent 7d delta from member_raids history
+    const mrGuild = lastMemberRaids?.guilds?.[g.name] || {};
+    const recentDelta = (uuid) => {
+      const hist = mrGuild[uuid];
+      if (!hist?.byDay) return null;
+      const dayKeys = Object.keys(hist.byDay).sort();
+      if (dayKeys.length < 2) return null;
+      const today = dayKeys[dayKeys.length - 1];
+      const targetKey = new Date(Date.now() - 7*86400_000).toISOString().slice(0, 10);
+      let base = null;
+      for (const d of dayKeys) { if (d >= targetKey && d !== today) { base = d; break; } }
+      if (base == null) base = dayKeys[0];
+      if (base === today) return null;
+      return hist.byDay[today] - hist.byDay[base];
+    };
+    const recentActive = (g.members || [])
+      .map(m => ({ ...m, recent: recentDelta(m.uuid) }))
+      .filter(m => (m.recent ?? 0) > 0)
+      .sort((a, b) => b.recent - a.recent)
       .slice(0, 8);
     const aList = document.getElementById(`m-${side}-active`);
-    aList.innerHTML = active.length
-      ? active.map(m => `<li>
+    if (recentActive.length) {
+      aList.innerHTML = recentActive.map(m => `<li>
           <div><span class="uname">${m.username}</span><span class="rank-tag">${m.rank}</span></div>
-          <div class="meta"><b>${fmt(m.guildRaidsTotal)}</b> raids</div>
-        </li>`).join("")
-      : `<li class="empty">no data</li>`;
+          <div class="meta"><b>${fmt(m.recent)}</b> raids · 7d</div>
+        </li>`).join("");
+    } else {
+      // fallback to all-time top raiders if no daily history yet
+      const fallback = [...(g.members || [])]
+        .filter(m => (m.guildRaidsTotal ?? 0) > 0)
+        .sort((a, b) => (b.guildRaidsTotal ?? 0) - (a.guildRaidsTotal ?? 0))
+        .slice(0, 8);
+      aList.innerHTML = fallback.length
+        ? fallback.map(m => `<li>
+            <div><span class="uname">${m.username}</span><span class="rank-tag">${m.rank}</span></div>
+            <div class="meta"><b>${fmt(m.guildRaidsTotal)}</b> all-time</div>
+          </li>`).join("")
+        : `<li class="empty">no data</li>`;
+    }
 
-    // events for this guild
+    // events for this guild — rank changes only
     if (eventsLog) {
       const guildName = g.name;
-      const evs = (eventsLog.events || [])
-        .filter(e => e.guild === guildName && (e.type === "promoted" || e.type === "demoted" || e.type === "left"))
+      const all = eventsLog.events || [];
+      const rankEvents = all
+        .filter(e => e.guild === guildName && (e.type === "promoted" || e.type === "demoted"))
         .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
         .slice(0, 12);
       const evList = document.getElementById(`m-${side}-events`);
-      if (!evs.length) {
-        evList.innerHTML = `<li class="empty">no rank changes tracked yet</li>`;
-      } else {
-        evList.innerHTML = evs.map(e => {
-          let action = "";
-          if (e.type === "promoted") action = `<b>${e.from}</b> → <b>${e.to}</b>`;
-          else if (e.type === "demoted") action = `<b>${e.from}</b> → <b>${e.to}</b> <small style="color:var(--muted)">(demoted)</small>`;
-          else if (e.type === "left") action = `left <small style="color:var(--muted)">(was ${e.from})</small>`;
-          return `<li>
-            <div><span class="uname">${e.username}</span></div>
-            <div class="meta">${action} · ${timeAgo(e.ts)}</div>
-          </li>`;
-        }).join("");
-      }
+      evList.innerHTML = rankEvents.length
+        ? rankEvents.map(e => {
+            const action = e.type === "promoted"
+              ? `<b>${e.from}</b> → <b>${e.to}</b>`
+              : `<b>${e.from}</b> → <b>${e.to}</b> <small style="color:var(--muted)">(demoted)</small>`;
+            return `<li>
+              <div><span class="uname">${e.username}</span></div>
+              <div class="meta">${action} · ${timeAgo(e.ts)}</div>
+            </li>`;
+          }).join("")
+        : `<li class="empty">no rank changes tracked yet</li>`;
+
+      // leavers
+      const leavers = all
+        .filter(e => e.guild === guildName && e.type === "left")
+        .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+        .slice(0, 12);
+      const lList = document.getElementById(`m-${side}-leavers`);
+      lList.innerHTML = leavers.length
+        ? leavers.map(e => `<li>
+            <div><span class="uname">${e.username}</span><span class="rank-tag">${e.from || "?"}</span></div>
+            <div class="meta">left · ${timeAgo(e.ts)}</div>
+          </li>`).join("")
+        : `<li class="empty">no leavers in tracking window</li>`;
     }
   }
 }
@@ -1717,18 +1779,21 @@ function render(data) {
 
 async function load() {
   try {
-    const [snapRes, memRes, evRes] = await Promise.all([
+    const [snapRes, memRes, evRes, mrRes] = await Promise.all([
       fetch("snapshots.json?_=" + Date.now(),       { cache: "no-store" }),
       fetch("members_state.json?_=" + Date.now(),   { cache: "no-store" }).catch(() => null),
       fetch("events.json?_=" + Date.now(),          { cache: "no-store" }).catch(() => null),
+      fetch("member_raids.json?_=" + Date.now(),    { cache: "no-store" }).catch(() => null),
     ]);
     if (!snapRes.ok) throw new Error("HTTP " + snapRes.status);
     const data = await snapRes.json();
-    let memberState = null, eventsLog = null;
+    let memberState = null, eventsLog = null, memberRaids = null;
     try { if (memRes && memRes.ok) memberState = await memRes.json(); } catch {}
     try { if (evRes  && evRes.ok)  eventsLog   = await evRes.json();  } catch {}
+    try { if (mrRes  && mrRes.ok)  memberRaids = await mrRes.json();  } catch {}
     lastMembers = memberState;
     lastEvents  = eventsLog;
+    lastMemberRaids = memberRaids;
     render(data);
     renderMembersFromState(memberState, eventsLog);
   } catch (e) {

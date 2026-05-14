@@ -4,6 +4,7 @@ const GUILDS_FILE       = "guilds.json";
 const HISTORY_FILE      = "snapshots.json";
 const MEMBERS_STATE_FILE = "members_state.json";
 const EVENTS_FILE       = "events.json";
+const MEMBER_RAIDS_FILE  = "member_raids.json";
 
 const RETAIN_DAYS       = 14;
 const EVENTS_RETAIN_DAYS = 60;
@@ -246,8 +247,27 @@ async function main() {
   eventLog.events = eventLog.events.filter(e => new Date(e.ts).getTime() >= eventsCutoff);
   eventLog.updated = ts;
 
+  // 4) per-member daily raids tracking (for "recent most active raiders")
+  const prevMr = await loadJson(MEMBER_RAIDS_FILE, null);
+  const dayKey = ts.slice(0, 10);
+  const cutoffKey = new Date(Date.now() - 14*86400_000).toISOString().slice(0, 10);
+  const newMr = { updated: ts, guilds: {} };
+  for (const side of ["left", "right"]) {
+    const g = newState[side];
+    newMr.guilds[g.name] = {};
+    const prevG = prevMr?.guilds?.[g.name] || {};
+    for (const m of g.members) {
+      const prevByDay = prevG[m.uuid]?.byDay || {};
+      const byDay = {};
+      for (const [d, v] of Object.entries(prevByDay)) if (d >= cutoffKey) byDay[d] = v;
+      byDay[dayKey] = m.guildRaidsTotal;
+      newMr.guilds[g.name][m.uuid] = { username: m.username, byDay };
+    }
+  }
+
   await writeFile(MEMBERS_STATE_FILE, JSON.stringify(newState, null, 2) + "\n");
   await writeFile(EVENTS_FILE, JSON.stringify(eventLog, null, 2) + "\n");
+  await writeFile(MEMBER_RAIDS_FILE, JSON.stringify(newMr, null, 2) + "\n");
 
   const gap = snapshot.left.seasonSr - snapshot.right.seasonSr;
   console.log(`OK season=${snapshot.season} L=${snapshot.left.seasonSr} R=${snapshot.right.seasonSr} gap=${gap} | online L=${snapshot.left.online}/${snapshot.left.memberCount} R=${snapshot.right.online}/${snapshot.right.memberCount} | snaps=${history.snapshots.length} events=${eventLog.events.length}`);
