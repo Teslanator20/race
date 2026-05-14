@@ -626,21 +626,27 @@
   <section class="activity">
     <div class="a-card">
       <div class="a-title">Wars (period)</div>
-      <div class="a-grid" id="act-wars">
-        <div class="a-label"></div><div class="a-label left"  id="act-left-1">L</div><div class="a-label right" id="act-right-1">R</div>
-      </div>
+      <div class="a-grid" id="act-wars"></div>
     </div>
     <div class="a-card">
       <div class="a-title">Guild Raids (period)</div>
-      <div class="a-grid" id="act-raids">
-        <div class="a-label"></div><div class="a-label left"  id="act-left-2">L</div><div class="a-label right" id="act-right-2">R</div>
-      </div>
+      <div class="a-grid" id="act-raids"></div>
     </div>
     <div class="a-card">
       <div class="a-title">Online</div>
-      <div class="a-grid" id="act-online">
-        <div class="a-label"></div><div class="a-label left"  id="act-left-3">L</div><div class="a-label right" id="act-right-3">R</div>
-      </div>
+      <div class="a-grid" id="act-online"></div>
+    </div>
+    <div class="a-card">
+      <div class="a-title">Combat (raid stats)</div>
+      <div class="a-grid" id="act-combat"></div>
+    </div>
+    <div class="a-card">
+      <div class="a-title">Gambits used</div>
+      <div class="a-grid" id="act-gambits"></div>
+    </div>
+    <div class="a-card">
+      <div class="a-title">Damage dealt</div>
+      <div class="a-grid" id="act-damage"></div>
     </div>
   </section>
 
@@ -736,6 +742,10 @@
       <ul class="mlist" id="m-left-joined"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recent rank changes</div>
       <ul class="mlist" id="m-left-events"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Top contributors (XP)</div>
+      <ul class="mlist" id="m-left-contribs"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders</div>
+      <ul class="mlist" id="m-left-active"><li class="skeleton">loading…</li></ul>
     </div>
     <div class="mcard right">
       <div class="mcard-head">
@@ -746,6 +756,10 @@
       <ul class="mlist" id="m-right-joined"><li class="skeleton">loading…</li></ul>
       <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Recent rank changes</div>
       <ul class="mlist" id="m-right-events"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Top contributors (XP)</div>
+      <ul class="mlist" id="m-right-contribs"><li class="skeleton">loading…</li></ul>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:600">Most active raiders</div>
+      <ul class="mlist" id="m-right-active"><li class="skeleton">loading…</li></ul>
     </div>
   </section>
 
@@ -776,6 +790,15 @@ document.getElementById("theme-toggle").addEventListener("click", () => {
 // ─── Helpers ───────────────────────────────────────────
 const fmt = n => (n ?? 0).toLocaleString("en-US");
 const fmtSigned = n => (n >= 0 ? "+" : "−") + fmt(Math.abs(n));
+function fmtBig(n) {
+  if (n == null) return "—";
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n/1e12).toFixed(2) + "T";
+  if (a >= 1e9)  return (n/1e9).toFixed(2) + "B";
+  if (a >= 1e6)  return (n/1e6).toFixed(2) + "M";
+  if (a >= 1e3)  return (n/1e3).toFixed(2) + "K";
+  return fmt(n);
+}
 function timeAgo(iso) {
   if (!iso) return "—";
   const d = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -900,12 +923,8 @@ function renderGuildCard(elId, side, cur, snaps) {
 
 function renderActivity(cur, snaps) {
   const win = { "24h": 24*3600_000, "7d": 7*86400_000, "14d": 14*86400_000 };
-  const fields = [
-    { id: "act-wars",  field: "wars" },
-    { id: "act-raids", field: "raids" },
-  ];
-  for (const { id, field } of fields) {
-    const grid = document.getElementById(id);
+  const buildDeltaCard = (gridId, field, formatter = fmtSigned) => {
+    const grid = document.getElementById(gridId);
     const rows = [
       `<div class="a-label"></div><div class="a-label left">${cur.left.name}</div><div class="a-label right">${cur.right.name}</div>`,
     ];
@@ -914,12 +933,18 @@ function renderActivity(cur, snaps) {
       const r = delta(snaps, `right.${field}`, ms);
       rows.push(`
         <div class="a-label">${lbl}</div>
-        <div class="a-val left">${l == null ? "—" : fmtSigned(l)}</div>
-        <div class="a-val right">${r == null ? "—" : fmtSigned(r)}</div>
+        <div class="a-val left">${l == null ? "—" : formatter(l)}</div>
+        <div class="a-val right">${r == null ? "—" : formatter(r)}</div>
       `);
     }
     grid.innerHTML = rows.join("");
-  }
+  };
+
+  buildDeltaCard("act-wars",   "wars");
+  buildDeltaCard("act-raids",  "raids");
+  buildDeltaCard("act-combat", "aggDeaths", v => (v >= 0 ? "+" : "−") + fmt(Math.abs(v)) + " ☠");
+  buildDeltaCard("act-gambits","aggGambits", v => (v >= 0 ? "+" : "−") + fmtBig(Math.abs(v)));
+  buildDeltaCard("act-damage", "aggDamageDealt", v => (v >= 0 ? "+" : "−") + fmtBig(Math.abs(v)));
 
   // online card
   const onlineGrid = document.getElementById("act-online");
@@ -1115,16 +1140,33 @@ function drawSpark(snaps) {
   destroyChart("spark");
   if (snaps.length < 2) return;
   const c = colors();
-  const pts = downsample(recentSnaps(snaps, rangeDays), 60);
+  const pts = downsample(recentSnaps(snaps, rangeDays), 80);
   const data = pts.map(s => s.left.seasonSr - s.right.seasonSr);
   const ctx = document.getElementById("spark-gap").getContext("2d");
   charts.spark = new Chart(ctx, {
     type: "line",
     data: { labels: pts.map(s => timeLabel(s.ts)),
-            datasets: [{ data, borderColor: c.ink, backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: .3 }] },
-    options: { responsive: true, maintainAspectRatio: false,
-               plugins: { legend: { display: false }, tooltip: { enabled: false } },
-               scales: { x: { display: false }, y: { display: false } } },
+            datasets: [{ label: "SR Gap", data, borderColor: c.ink,
+                         backgroundColor: "transparent", borderWidth: 1.5,
+                         pointRadius: 0, pointHoverRadius: 4, pointHoverBorderWidth: 2,
+                         pointHoverBackgroundColor: c.paper, pointHoverBorderColor: c.ink,
+                         tension: .3 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          backgroundColor: c.ink, titleColor: c.paper, bodyColor: c.paper,
+          borderWidth: 0, padding: 8, boxPadding: 4,
+          titleFont: { family: "Inter", size: 10.5, weight: 600 },
+          bodyFont:  { family: "Inter", size: 11.5 },
+          callbacks: { label: ctx => `${ctx.parsed.y >= 0 ? "+" : "−"}${Math.abs(ctx.parsed.y).toLocaleString("en-US")}` },
+        },
+      },
+      scales: { x: { display: false }, y: { display: false } },
+    },
   });
 }
 
@@ -1329,6 +1371,32 @@ function renderMembersFromState(state, eventsLog) {
       }).join("");
     }
 
+    // top contributors (by contributed XP)
+    const contribs = [...(g.members || [])]
+      .filter(m => (m.contributed ?? 0) > 0)
+      .sort((a, b) => (b.contributed ?? 0) - (a.contributed ?? 0))
+      .slice(0, 8);
+    const cList = document.getElementById(`m-${side}-contribs`);
+    cList.innerHTML = contribs.length
+      ? contribs.map(m => `<li>
+          <div><span class="uname">${m.username}</span><span class="rank-tag">${m.rank}</span></div>
+          <div class="meta"><b>${fmtBig(m.contributed)}</b> XP</div>
+        </li>`).join("")
+      : `<li class="empty">no contributors yet</li>`;
+
+    // most active raiders (by guildRaidsTotal)
+    const active = [...(g.members || [])]
+      .filter(m => (m.guildRaidsTotal ?? 0) > 0)
+      .sort((a, b) => (b.guildRaidsTotal ?? 0) - (a.guildRaidsTotal ?? 0))
+      .slice(0, 8);
+    const aList = document.getElementById(`m-${side}-active`);
+    aList.innerHTML = active.length
+      ? active.map(m => `<li>
+          <div><span class="uname">${m.username}</span><span class="rank-tag">${m.rank}</span></div>
+          <div class="meta"><b>${fmt(m.guildRaidsTotal)}</b> raids</div>
+        </li>`).join("")
+      : `<li class="empty">no data</li>`;
+
     // events for this guild
     if (eventsLog) {
       const guildName = g.name;
@@ -1356,31 +1424,47 @@ function renderMembersFromState(state, eventsLog) {
 }
 
 // ─── Spotlight (SR / TNA detailed race) ──────────────────────
+function linearRegression(pts) {
+  const n = pts.length;
+  if (n < 2) return null;
+  let sx = 0, sy = 0, sxy = 0, sxx = 0;
+  for (const p of pts) { sx += p.x; sy += p.y; sxy += p.x * p.y; sxx += p.x * p.x; }
+  const mx = sx / n, my = sy / n;
+  const den = sxx - n * mx * mx;
+  if (den === 0) return null;
+  const slope = (sxy - n * mx * my) / den;
+  return { slope, intercept: my - slope * mx, n };
+}
+
 function computeRace(snaps, getL, getR, days) {
-  // returns { dayRate, etaText, etaSub, trendDir, trendDelta }
   if (snaps.length < 2) return null;
-  const cur  = snaps[snaps.length - 1];
-  const past = snapshotsBefore(snaps, days * 86400_000);
-  if (!past) return null;
-  const gap_now  = getL(cur)  - getR(cur);
-  const gap_past = getL(past) - getR(past);
-  const dt = (new Date(cur.ts) - new Date(past.ts)) / 86400_000;
-  const dayRate = dt > 0 ? (gap_now - gap_past) / dt : 0;
-  const trendDelta = gap_now - gap_past;
+  const cutoff = Date.now() - days * 86400_000;
+  const window = snaps.filter(s => new Date(s.ts).getTime() >= cutoff);
+  if (window.length < 2) return null;
+
+  const pts = window.map(s => ({ x: new Date(s.ts).getTime(), y: getL(s) - getR(s) }));
+  const reg = linearRegression(pts);
+  if (!reg) return null;
+
+  const dayRate = reg.slope * 86400_000;           // gap change per day (from regression)
+  const cur     = snaps[snaps.length - 1];
+  const gap_now = getL(cur) - getR(cur);
+  const trendDelta = pts[pts.length - 1].y - pts[0].y;
+
   const shrinking = (gap_now > 0 && dayRate < 0) || (gap_now < 0 && dayRate > 0);
   let etaText = "—", etaSub = "need more data";
   if (shrinking) {
     const d = Math.abs(gap_now) / Math.abs(dayRate);
     etaText = d < 1 ? `~ ${(d*24).toFixed(1)} h` : `~ ${d.toFixed(1)} d`;
-    etaSub = `closing (${days}d trend)`;
+    etaSub = `closing — ${reg.n} pts over ${days}d`;
   } else if (Math.abs(dayRate) < 1) {
     etaText = "stable";
-    etaSub = `flat (${days}d trend)`;
+    etaSub = `flat — ${reg.n} pts over ${days}d`;
   } else {
     etaText = "pulling away";
-    etaSub  = `widening (${days}d trend)`;
+    etaSub  = `widening — ${reg.n} pts over ${days}d`;
   }
-  return { dayRate, etaText, etaSub, trendDelta };
+  return { dayRate, etaText, etaSub, trendDelta, n: reg.n };
 }
 
 function deltaPerRaid(snaps, side, raidKey, field, msAgo) {
@@ -1395,7 +1479,7 @@ function deltaPerRaid(snaps, side, raidKey, field, msAgo) {
 }
 
 function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftName, rightName,
-                      gapHistory, completionsRow, gambitsLeft, gambitsRight, snaps, getL, getR, chartKey, valLabel }) {
+                      gapHistory, completionsRow, secondaryHtml, snaps, getL, getR, chartKey, valLabel }) {
   const cur = snaps[snaps.length - 1];
   const gap = leftVal - rightVal;
   const leader = gap >= 0 ? leftName : rightName;
@@ -1463,11 +1547,7 @@ function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftN
           </tr>
         </tbody>
       </table>
-      <div class="spot-gambits">
-        <div class="lbl">Gambits / raid</div>
-        <div class="gline"><span class="who left">${leftName}</span>  <span class="gv">${gambitsLeft.toFixed(2)}</span></div>
-        <div class="gline"><span class="who right">${rightName}</span><span class="gv">${gambitsRight.toFixed(2)}</span></div>
-      </div>
+      ${secondaryHtml}
     </div>
   `;
 
@@ -1498,20 +1578,41 @@ function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftN
 }
 
 function renderSrSpotlight(cur, snaps) {
+  // wars done in 24h / 7d / 14d
+  const wL = [delta(snaps, "left.wars",  86400_000), delta(snaps, "left.wars",  7*86400_000), delta(snaps, "left.wars",  14*86400_000)];
+  const wR = [delta(snaps, "right.wars", 86400_000), delta(snaps, "right.wars", 7*86400_000), delta(snaps, "right.wars", 14*86400_000)];
+  const warsTable = `
+    <table class="spot-table">
+      <thead>
+        <tr><th>Wars done</th><th class="num">24h</th><th class="num">7d</th><th class="num">14d</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="left">${cur.left.name}</td>
+          <td class="num">${wL[0] == null ? "—" : fmt(wL[0])}</td>
+          <td class="num">${wL[1] == null ? "—" : fmt(wL[1])}</td>
+          <td class="num">${wL[2] == null ? "—" : fmt(wL[2])}</td>
+        </tr>
+        <tr>
+          <td class="right">${cur.right.name}</td>
+          <td class="num">${wR[0] == null ? "—" : fmt(wR[0])}</td>
+          <td class="num">${wR[1] == null ? "—" : fmt(wR[1])}</td>
+          <td class="num">${wR[2] == null ? "—" : fmt(wR[2])}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
   renderSpot({
     elId: "spot-sr",
     title: "Season SR",
-    leftName: cur.left.name,
-    rightName: cur.right.name,
-    leftVal: cur.left.seasonSr,
-    rightVal: cur.right.seasonSr,
+    leftName: cur.left.name, rightName: cur.right.name,
+    leftVal: cur.left.seasonSr, rightVal: cur.right.seasonSr,
     leftRank: null, rightRank: null,
     completionsRow: {
       left:  [delta(snaps, "left.raids",  86400_000), delta(snaps, "left.raids",  7*86400_000),  delta(snaps, "left.raids",  14*86400_000)],
       right: [delta(snaps, "right.raids", 86400_000), delta(snaps, "right.raids", 7*86400_000),  delta(snaps, "right.raids", 14*86400_000)],
     },
-    gambitsLeft:  totalGambitsPerRaid(cur, "left"),
-    gambitsRight: totalGambitsPerRaid(cur, "right"),
+    secondaryHtml: warsTable,
     snaps,
     getL: s => s.left.seasonSr,
     getR: s => s.right.seasonSr,
@@ -1523,15 +1624,21 @@ function renderSrSpotlight(cur, snaps) {
 function renderTnaSpotlight(cur, snaps) {
   const lTna = cur.left.perRaid?.nameless;
   const rTna = cur.right.perRaid?.nameless;
+  const lAvg = lTna?.completions ? (lTna.gambits / lTna.completions / 4) : 0;
+  const rAvg = rTna?.completions ? (rTna.gambits / rTna.completions / 4) : 0;
+  const gambitsBlock = `
+    <div class="spot-gambits">
+      <div class="lbl">Gambits / raid (per player)</div>
+      <div class="gline"><span class="who left">${cur.left.name}</span>  <span class="gv">${lAvg.toFixed(2)}</span></div>
+      <div class="gline"><span class="who right">${cur.right.name}</span><span class="gv">${rAvg.toFixed(2)}</span></div>
+    </div>
+  `;
   renderSpot({
     elId: "spot-tna",
     title: "Nameless Anomaly (TNA)",
-    leftName: cur.left.name,
-    rightName: cur.right.name,
-    leftVal:  lTna?.sr ?? 0,
-    rightVal: rTna?.sr ?? 0,
-    leftRank:  lTna?.rank,
-    rightRank: rTna?.rank,
+    leftName: cur.left.name, rightName: cur.right.name,
+    leftVal:  lTna?.sr ?? 0, rightVal: rTna?.sr ?? 0,
+    leftRank:  lTna?.rank, rightRank: rTna?.rank,
     completionsRow: {
       left:  [deltaPerRaid(snaps, "left",  "nameless", "completions", 86400_000),
               deltaPerRaid(snaps, "left",  "nameless", "completions", 7*86400_000),
@@ -1540,8 +1647,7 @@ function renderTnaSpotlight(cur, snaps) {
               deltaPerRaid(snaps, "right", "nameless", "completions", 7*86400_000),
               deltaPerRaid(snaps, "right", "nameless", "completions", 14*86400_000)],
     },
-    gambitsLeft:  lTna?.completions ? (lTna.gambits / lTna.completions / 4) : 0,
-    gambitsRight: rTna?.completions ? (rTna.gambits / rTna.completions / 4) : 0,
+    secondaryHtml: gambitsBlock,
     snaps,
     getL: s => s.left.perRaid?.nameless?.sr  ?? 0,
     getR: s => s.right.perRaid?.nameless?.sr ?? 0,

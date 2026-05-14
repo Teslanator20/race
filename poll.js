@@ -76,6 +76,10 @@ function findInLb(lbEntries, uuid) {
 function extractMembers(memData) {
   const out = [];
   let online = 0;
+  const agg = {
+    damageDealt: 0, damageTaken: 0, deaths: 0,
+    gambitsUsed: 0, healthHealed: 0, buffsTaken: 0,
+  };
   for (const rank of RANK_ORDER) {
     const group = memData?.[rank] || {};
     for (const [username, m] of Object.entries(group)) {
@@ -92,9 +96,18 @@ function extractMembers(memData) {
         contributionRank: m.contributionRank ?? null,
         guildRaidsTotal: Number(m.globalData?.guildRaids?.total ?? 0),
       });
+      const rs = m.globalData?.raidStats;
+      if (rs) {
+        agg.damageDealt  += Number(rs.damageDealt  || 0);
+        agg.damageTaken  += Number(rs.damageTaken  || 0);
+        agg.deaths       += Number(rs.deaths       || 0);
+        agg.gambitsUsed  += Number(rs.gambitsUsed  || 0);
+        agg.healthHealed += Number(rs.healthHealed || 0);
+        agg.buffsTaken   += Number(rs.buffsTaken   || 0);
+      }
     }
   }
-  return { members: out, online, total: out.length };
+  return { members: out, online, total: out.length, agg };
 }
 
 function summarize(name, data, raidLbs) {
@@ -120,6 +133,11 @@ function summarize(name, data, raidLbs) {
       online: memInfo.online,
       memberCount: memInfo.total,
       perRaid,
+      aggDamageDealt: memInfo.agg.damageDealt,
+      aggDamageTaken: memInfo.agg.damageTaken,
+      aggDeaths:      memInfo.agg.deaths,
+      aggGambits:     memInfo.agg.gambitsUsed,
+      aggHealed:      memInfo.agg.healthHealed,
     },
     members: {
       name: data.name ?? name,
