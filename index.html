@@ -733,6 +733,13 @@
     </div>
 
     <div class="ccard">
+      <div class="ccard-title">Avg online — last 7 days
+        <span class="legend">24h rolling mean</span>
+      </div>
+      <div class="ccard-canvas"><canvas id="ch-online-avg"></canvas></div>
+    </div>
+
+    <div class="ccard">
       <div class="ccard-title">Per-raid SR — now</div>
       <div class="ccard-canvas"><canvas id="ch-raids-bar"></canvas></div>
     </div>
@@ -1734,6 +1741,60 @@ function totalGambitsPerRaid(cur, side) {
 function drawOnlineSeries(snaps) {
   lineChart("online", "ch-online", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, rangeDays);
 }
+
+function drawOnlineAvg(snaps) {
+  destroyChart("online-avg");
+  if (snaps.length < 2) return;
+  const c = colors();
+  const window = recentSnaps(snaps, 7);
+  if (window.length < 2) return;
+
+  const windowMs = 86400_000; // 24h rolling window
+  const times = window.map(s => new Date(s.ts).getTime());
+  const lVals = window.map(s => s.left.online  ?? 0);
+  const rVals = window.map(s => s.right.online ?? 0);
+
+  const rolling = (vals) => {
+    const out = [];
+    let lo = 0, sum = 0;
+    for (let i = 0; i < vals.length; i++) {
+      sum += vals[i];
+      while (times[i] - times[lo] > windowMs) { sum -= vals[lo]; lo++; }
+      out.push(sum / (i - lo + 1));
+    }
+    return out;
+  };
+
+  const lAvg = rolling(lVals);
+  const rAvg = rolling(rVals);
+
+  const stride = Math.max(1, Math.floor(window.length / 200));
+  const idx = [];
+  for (let i = 0; i < window.length; i += stride) idx.push(i);
+  if (idx[idx.length - 1] !== window.length - 1) idx.push(window.length - 1);
+
+  const ctx = document.getElementById("ch-online-avg").getContext("2d");
+  charts["online-avg"] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: idx.map(i => timeLabel(window[i].ts)),
+      datasets: [
+        { label: window[0].left.name,  data: idx.map(i => lAvg[i]), borderColor: c.left,  backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, tension: .3 },
+        { label: window[0].right.name, data: idx.map(i => rAvg[i]), borderColor: c.right, backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, tension: .3 },
+      ],
+    },
+    options: {
+      ...baseOpts(c),
+      plugins: {
+        ...baseOpts(c).plugins,
+        tooltip: {
+          ...baseOpts(c).plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}` },
+        },
+      },
+    },
+  });
+}
 function drawTerritories(snaps) {
   lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, rangeDays);
 }
@@ -1778,6 +1839,7 @@ function render(data) {
   drawDailyBreakdown("right", "ch-daily-right", snaps);
   drawTerritories(snaps);
   drawOnlineSeries(snaps);
+  drawOnlineAvg(snaps);
   drawPerRaidTrends(snaps);
 }
 
