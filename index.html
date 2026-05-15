@@ -754,6 +754,16 @@
     </div>
 
     <div class="ccard">
+      <div class="ccard-title">Total raids over time</div>
+      <div class="ccard-canvas"><canvas id="ch-raids-total"></canvas></div>
+    </div>
+
+    <div class="ccard">
+      <div class="ccard-title">Total wars over time</div>
+      <div class="ccard-canvas"><canvas id="ch-wars-total"></canvas></div>
+    </div>
+
+    <div class="ccard">
       <div class="ccard-title">Per-raid SR — now</div>
       <div class="ccard-canvas"><canvas id="ch-raids-bar"></canvas></div>
     </div>
@@ -1897,6 +1907,8 @@ function render(data) {
   drawOnlineAvg(snaps);
   drawCounterByHour("raids-hod", "ch-raids-hod", snaps, s => s.left.raids, s => s.right.raids);
   drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
+  lineChart("raidsTotal", "ch-raids-total", snaps, s => s.left.raids ?? 0, s => s.right.raids ?? 0, rangeDays);
+  lineChart("warsTotal",  "ch-wars-total",  snaps, s => s.left.wars  ?? 0, s => s.right.wars  ?? 0, rangeDays);
   drawPerRaidTrends(snaps);
 }
 
