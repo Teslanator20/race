@@ -740,6 +740,20 @@
     </div>
 
     <div class="ccard">
+      <div class="ccard-title">Avg raids done by hour — last 7 days
+        <span class="legend">avg raids/hour at each hour of day</span>
+      </div>
+      <div class="ccard-canvas"><canvas id="ch-raids-hod"></canvas></div>
+    </div>
+
+    <div class="ccard">
+      <div class="ccard-title">Avg wars done by hour — last 7 days
+        <span class="legend">avg wars/hour at each hour of day</span>
+      </div>
+      <div class="ccard-canvas"><canvas id="ch-wars-hod"></canvas></div>
+    </div>
+
+    <div class="ccard">
       <div class="ccard-title">Per-raid SR — now</div>
       <div class="ccard-canvas"><canvas id="ch-raids-bar"></canvas></div>
     </div>
@@ -1789,6 +1803,57 @@ function drawTerritories(snaps) {
   lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, rangeDays);
 }
 
+function drawCounterByHour(key, canvasId, snaps, getL, getR) {
+  destroyChart(key);
+  const c = colors();
+  const window = recentSnaps(snaps, 7);
+  if (window.length < 2) { setEmpty(canvasId, "Need more data"); return; }
+
+  // Compute rate per hour-of-day by averaging deltas between consecutive snapshots,
+  // normalized to per-hour (delta / intervalHours), bucketed by the END snapshot's hour.
+  const lSum = new Array(24).fill(0), rSum = new Array(24).fill(0), n = new Array(24).fill(0);
+  for (let i = 1; i < window.length; i++) {
+    const a = window[i-1], b = window[i];
+    const dt = (new Date(b.ts).getTime() - new Date(a.ts).getTime()) / 3600_000;
+    if (dt <= 0 || dt > 1) continue; // skip large gaps (e.g. downtime) so they don't skew averages
+    const dl = (getL(b) ?? 0) - (getL(a) ?? 0);
+    const dr = (getR(b) ?? 0) - (getR(a) ?? 0);
+    if (dl < 0 || dr < 0) continue; // counters reset (season change) — skip
+    const h = new Date(b.ts).getHours();
+    lSum[h] += dl / dt;
+    rSum[h] += dr / dt;
+    n[h]++;
+  }
+  if (n.every(v => v === 0)) { setEmpty(canvasId, "Need more data"); return; }
+  setEmpty(canvasId, null);
+
+  const labels = Array.from({length: 24}, (_, h) => `${h.toString().padStart(2,"0")}:00`);
+  const lAvg = lSum.map((v, i) => n[i] ? v / n[i] : null);
+  const rAvg = rSum.map((v, i) => n[i] ? v / n[i] : null);
+
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[key] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: window[0].left.name,  data: lAvg, borderColor: c.left,  backgroundColor: "transparent", borderWidth: 2, pointRadius: 2, tension: .35, spanGaps: true },
+        { label: window[0].right.name, data: rAvg, borderColor: c.right, backgroundColor: "transparent", borderWidth: 2, pointRadius: 2, tension: .35, spanGaps: true },
+      ],
+    },
+    options: {
+      ...baseOpts(c),
+      plugins: {
+        ...baseOpts(c).plugins,
+        tooltip: {
+          ...baseOpts(c).plugins.tooltip,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}/h` },
+        },
+      },
+    },
+  });
+}
+
 // ─── Main render ───────────────────────────────────────
 function render(data) {
   lastData = data;
@@ -1830,6 +1895,8 @@ function render(data) {
   drawTerritories(snaps);
   drawOnlineSeries(snaps);
   drawOnlineAvg(snaps);
+  drawCounterByHour("raids-hod", "ch-raids-hod", snaps, s => s.left.raids, s => s.right.raids);
+  drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
   drawPerRaidTrends(snaps);
 }
 
