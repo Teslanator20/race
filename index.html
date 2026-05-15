@@ -733,8 +733,8 @@
     </div>
 
     <div class="ccard">
-      <div class="ccard-title">Avg online per day — last 7 days
-        <span class="legend">avg of all snapshots per calendar day</span>
+      <div class="ccard-title">Avg online by hour — last 7 days
+        <span class="legend">avg online at each hour of day (local time)</span>
       </div>
       <div class="ccard-canvas"><canvas id="ch-online-avg"></canvas></div>
     </div>
@@ -1748,24 +1748,20 @@ function drawOnlineAvg(snaps) {
   const window = recentSnaps(snaps, 7);
   if (window.length < 2) { setEmpty("ch-online-avg", "Need more data"); return; }
 
-  // Bucket by calendar day (local time); average all online values within 00:00–23:59
-  const byDay = new Map();
+  // Bucket by hour-of-day (local time): average online at each hour across the 7-day window
+  const lSum = new Array(24).fill(0), rSum = new Array(24).fill(0), n = new Array(24).fill(0);
   for (const s of window) {
-    const d = new Date(s.ts);
-    const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}-${d.getDate().toString().padStart(2,"0")}`;
-    let agg = byDay.get(key);
-    if (!agg) { agg = { lSum: 0, rSum: 0, n: 0, label: `${d.getMonth()+1}/${d.getDate()}` }; byDay.set(key, agg); }
-    agg.lSum += s.left.online  ?? 0;
-    agg.rSum += s.right.online ?? 0;
-    agg.n++;
+    const h = new Date(s.ts).getHours();
+    lSum[h] += s.left.online  ?? 0;
+    rSum[h] += s.right.online ?? 0;
+    n[h]++;
   }
-  const days = [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  if (days.length < 1) { setEmpty("ch-online-avg", "Need more data"); return; }
+  if (n.every(v => v === 0)) { setEmpty("ch-online-avg", "Need more data"); return; }
   setEmpty("ch-online-avg", null);
 
-  const labels = days.map(([, v]) => v.label);
-  const lAvg = days.map(([, v]) => v.lSum / v.n);
-  const rAvg = days.map(([, v]) => v.rSum / v.n);
+  const labels = Array.from({length: 24}, (_, h) => `${h.toString().padStart(2,"0")}:00`);
+  const lAvg = lSum.map((v, i) => n[i] ? v / n[i] : null);
+  const rAvg = rSum.map((v, i) => n[i] ? v / n[i] : null);
 
   const ctx = document.getElementById("ch-online-avg").getContext("2d");
   charts["online-avg"] = new Chart(ctx, {
@@ -1773,8 +1769,8 @@ function drawOnlineAvg(snaps) {
     data: {
       labels,
       datasets: [
-        { label: window[0].left.name,  data: lAvg, borderColor: c.left,  backgroundColor: "transparent", borderWidth: 2, pointRadius: 3, tension: .25 },
-        { label: window[0].right.name, data: rAvg, borderColor: c.right, backgroundColor: "transparent", borderWidth: 2, pointRadius: 3, tension: .25 },
+        { label: window[0].left.name,  data: lAvg, borderColor: c.left,  backgroundColor: "transparent", borderWidth: 2, pointRadius: 2, tension: .35, spanGaps: true },
+        { label: window[0].right.name, data: rAvg, borderColor: c.right, backgroundColor: "transparent", borderWidth: 2, pointRadius: 2, tension: .35, spanGaps: true },
       ],
     },
     options: {
