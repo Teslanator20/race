@@ -754,12 +754,12 @@
     </div>
 
     <div class="ccard">
-      <div class="ccard-title">Total raids over time</div>
+      <div class="ccard-title">Raids since range start</div>
       <div class="ccard-canvas"><canvas id="ch-raids-total"></canvas></div>
     </div>
 
     <div class="ccard">
-      <div class="ccard-title">Total wars over time</div>
+      <div class="ccard-title">Wars since range start</div>
       <div class="ccard-canvas"><canvas id="ch-wars-total"></canvas></div>
     </div>
 
@@ -1813,6 +1813,28 @@ function drawTerritories(snaps) {
   lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, rangeDays);
 }
 
+function drawCounterSinceStart(key, canvasId, snaps, getL, getR) {
+  destroyChart(key);
+  const c = colors();
+  const pts = downsample(recentSnaps(snaps, rangeDays), 200);
+  if (pts.length < 2) { setEmpty(canvasId, "Need ≥ 2 snapshots"); return; }
+  setEmpty(canvasId, null);
+  const lBase = getL(pts[0]) ?? 0;
+  const rBase = getR(pts[0]) ?? 0;
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  charts[key] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: pts.map(s => timeLabel(s.ts)),
+      datasets: [
+        { label: pts[0].left.name,  data: pts.map(s => (getL(s) ?? 0) - lBase), borderColor: c.left,  backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, tension: .25 },
+        { label: pts[0].right.name, data: pts.map(s => (getR(s) ?? 0) - rBase), borderColor: c.right, backgroundColor: "transparent", borderWidth: 2, pointRadius: 0, tension: .25 },
+      ],
+    },
+    options: baseOpts(c),
+  });
+}
+
 function drawCounterByHour(key, canvasId, snaps, getL, getR) {
   destroyChart(key);
   const c = colors();
@@ -1907,8 +1929,8 @@ function render(data) {
   drawOnlineAvg(snaps);
   drawCounterByHour("raids-hod", "ch-raids-hod", snaps, s => s.left.raids, s => s.right.raids);
   drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
-  lineChart("raidsTotal", "ch-raids-total", snaps, s => s.left.raids ?? 0, s => s.right.raids ?? 0, rangeDays);
-  lineChart("warsTotal",  "ch-wars-total",  snaps, s => s.left.wars  ?? 0, s => s.right.wars  ?? 0, rangeDays);
+  drawCounterSinceStart("raidsTotal", "ch-raids-total", snaps, s => s.left.raids, s => s.right.raids);
+  drawCounterSinceStart("warsTotal",  "ch-wars-total",  snaps, s => s.left.wars,  s => s.right.wars);
   drawPerRaidTrends(snaps);
 }
 
