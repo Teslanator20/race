@@ -1553,6 +1553,9 @@ function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftN
   const trendCls = (best?.trendDelta ?? 0) === 0 ? "" :
                    ((gap >= 0 && best.trendDelta > 0) || (gap < 0 && best.trendDelta < 0)) ? "up" : "down";
   const trendText = best ? fmtSigned(best.trendDelta) : "—";
+  const trend24Cls = (r24?.trendDelta ?? 0) === 0 ? "" :
+                     ((gap >= 0 && r24.trendDelta > 0) || (gap < 0 && r24.trendDelta < 0)) ? "up" : "down";
+  const trend24Text = r24 ? fmtSigned(r24.trendDelta) : "—";
 
   const el = document.getElementById(elId);
   el.innerHTML = `
@@ -1577,6 +1580,7 @@ function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftN
           <div class="spot-gap-val">${gap >= 0 ? "+" : "−"}${fmt(Math.abs(gap))}</div>
           <div class="spot-gap-meta">
             <span class="pill ${trendCls}">${best ? `${trendText} in ${best === r7 ? "7d" : "24h"}` : "—"}</span>
+            <span class="pill ${trend24Cls}">${r24 ? `${trend24Text} in 24h` : "—"}</span>
             <span class="pill">${best ? `rate ${fmtSigned(Math.round(best.dayRate))}/day` : "—"}</span>
             <span class="pill">ETA: <b>${best?.etaText ?? "—"}</b></span>
           </div>
