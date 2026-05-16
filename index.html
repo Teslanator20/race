@@ -1432,7 +1432,7 @@ function renderMembersFromState(state, eventsLog) {
     // most active raiders — recent 7d delta from member_raids history.
     // guard against API-toggle artifacts (player had API off → reading was 0, then
     // toggled on and value jumps to career total) and against unrealistic spikes.
-    const MAX_RAIDS_PER_DAY = 50; // realistic upper bound
+    const MAX_RAIDS_PER_DAY = 180; // realistic upper bound
     const mrGuild = lastMemberRaids?.guilds?.[g.name] || {};
     const recentDelta = (uuid) => {
       const hist = mrGuild[uuid];
