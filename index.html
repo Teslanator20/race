@@ -721,6 +721,11 @@
     </div>
 
     <div class="ccard">
+      <div class="ccard-title">Online — last 24h</div>
+      <div class="ccard-canvas"><canvas id="ch-online-24h"></canvas></div>
+    </div>
+
+    <div class="ccard">
       <div class="ccard-title">Avg online by hour — last 7 days
         <span class="legend">avg online at each hour of day (local time)</span>
       </div>
@@ -1750,6 +1755,9 @@ function totalGambitsPerRaid(cur, side) {
 function drawOnlineSeries(snaps) {
   lineChart("online", "ch-online", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, rangeDays);
 }
+function drawOnline24h(snaps) {
+  lineChart("online24h", "ch-online-24h", snaps, s => s.left.online ?? 0, s => s.right.online ?? 0, 1);
+}
 
 function drawOnlineAvg(snaps) {
   destroyChart("online-avg");
@@ -1911,6 +1919,7 @@ function render(data) {
   drawDailyBreakdown("right", "ch-daily-right", snaps);
   drawTerritories(snaps);
   drawOnlineSeries(snaps);
+  drawOnline24h(snaps);
   drawOnlineAvg(snaps);
   drawCounterByHour("raids-hod", "ch-raids-hod", snaps, s => s.left.raids, s => s.right.raids);
   drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
