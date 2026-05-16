@@ -1429,7 +1429,10 @@ function renderMembersFromState(state, eventsLog) {
         </li>`).join("")
       : `<li class="empty">no contributors yet</li>`;
 
-    // most active raiders — recent 7d delta from member_raids history
+    // most active raiders — recent 7d delta from member_raids history.
+    // guard against API-toggle artifacts (player had API off → reading was 0, then
+    // toggled on and value jumps to career total) and against unrealistic spikes.
+    const MAX_RAIDS_PER_DAY = 50; // realistic upper bound
     const mrGuild = lastMemberRaids?.guilds?.[g.name] || {};
     const recentDelta = (uuid) => {
       const hist = mrGuild[uuid];
@@ -1437,12 +1440,22 @@ function renderMembersFromState(state, eventsLog) {
       const dayKeys = Object.keys(hist.byDay).sort();
       if (dayKeys.length < 2) return null;
       const today = dayKeys[dayKeys.length - 1];
+      const todayVal = hist.byDay[today];
+      if (!todayVal) return null; // API currently off
       const targetKey = new Date(Date.now() - 7*86400_000).toISOString().slice(0, 10);
+      // earliest non-zero baseline within the 7d window (skip zero readings = API was off)
       let base = null;
-      for (const d of dayKeys) { if (d >= targetKey && d !== today) { base = d; break; } }
-      if (base == null) base = dayKeys[0];
-      if (base === today) return null;
-      return hist.byDay[today] - hist.byDay[base];
+      for (const d of dayKeys) {
+        if (d === today) break;
+        if (d < targetKey) continue;
+        if (hist.byDay[d] > 0) { base = d; break; }
+      }
+      if (base == null) return null;
+      const delta = todayVal - hist.byDay[base];
+      if (delta <= 0) return null;
+      const daysCovered = Math.max(1, Math.ceil((Date.parse(today) - Date.parse(base)) / 86400_000));
+      if (delta > MAX_RAIDS_PER_DAY * daysCovered) return null;
+      return delta;
     };
     const recentActive = (g.members || [])
       .map(m => ({ ...m, recent: recentDelta(m.uuid) }))
