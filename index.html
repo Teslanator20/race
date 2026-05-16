@@ -644,18 +644,6 @@
       <div class="a-title">Online</div>
       <div class="a-grid" id="act-online"></div>
     </div>
-    <div class="a-card">
-      <div class="a-title">Combat (raid stats)</div>
-      <div class="a-grid" id="act-combat"></div>
-    </div>
-    <div class="a-card">
-      <div class="a-title">Gambits used</div>
-      <div class="a-grid" id="act-gambits"></div>
-    </div>
-    <div class="a-card">
-      <div class="a-title">Damage dealt</div>
-      <div class="a-grid" id="act-damage"></div>
-    </div>
   </section>
 
   <!-- PER-RAID -->
@@ -986,9 +974,6 @@ function renderActivity(cur, snaps) {
 
   buildDeltaCard("act-wars",   "wars");
   buildDeltaCard("act-raids",  "raids");
-  buildDeltaCard("act-combat", "aggDeaths", v => (v >= 0 ? "+" : "−") + fmt(Math.abs(v)) + " ☠");
-  buildDeltaCard("act-gambits","aggGambits", v => (v >= 0 ? "+" : "−") + fmtBig(Math.abs(v)));
-  buildDeltaCard("act-damage", "aggDamageDealt", v => (v >= 0 ? "+" : "−") + fmtBig(Math.abs(v)));
 
   // online card
   const onlineGrid = document.getElementById("act-online");
