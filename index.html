@@ -925,11 +925,11 @@ function rangeLabel() {
 }
 
 // ─── Sections ──────────────────────────────────────────
-function renderGuildCard(elId, side, cur, snaps) {
+function renderGuildCard(elId, side, cur, snaps, srSnapsList = snaps) {
   const el = document.getElementById(elId);
   const g = cur[side];
-  const d24 = p => delta(snaps, `${side}.${p}`, 24*3600_000);
-  const d7  = p => delta(snaps, `${side}.${p}`, 7*86400_000);
+  const d24 = (p, src = snaps) => delta(src, `${side}.${p}`, 24*3600_000);
+  const d7  = (p, src = snaps) => delta(src, `${side}.${p}`, 7*86400_000);
 
   function row(label, value, d24v, d7v) {
     const cls24 = d24v == null ? "" : (d24v > 0 ? "up" : d24v < 0 ? "down" : "");
@@ -949,7 +949,7 @@ function renderGuildCard(elId, side, cur, snaps) {
       <span class="gcard-name">${g.name}</span>
       <span class="gcard-prefix">${g.prefix || ""}</span>
     </div>
-    ${row("Season SR",   fmt(g.seasonSr),    d24("seasonSr"),    d7("seasonSr"))}
+    ${row("Season SR",   fmt(g.seasonSr),    d24("seasonSr", srSnapsList), d7("seasonSr", srSnapsList))}
     ${row("Total Raids", fmt(g.raids),       d24("raids"),       d7("raids"))}
     ${row("Wars",        fmt(g.wars),        d24("wars"),        d7("wars"))}
     ${row("Territories", fmt(g.territories), d24("territories"), d7("territories"))}
@@ -1893,6 +1893,19 @@ function drawCounterByHour(key, canvasId, snaps, getL, getR) {
 }
 
 // ─── Main render ───────────────────────────────────────
+// Season reset: SR values reset; raids/wars/territories do NOT.
+// Berlin 30.05.2026 01:00 CEST = 29.05.2026 23:00 UTC
+const SEASON_START_UTC = Date.parse("2026-05-29T23:00:00Z");
+
+// Filter snapshots used for SR-based views: only those at/after the season-start cutoff.
+// Falls back to all snapshots if the cutoff hasn't passed yet (so the page stays useful
+// before the reset). Once snapshots accumulate after the cutoff, SR charts auto-reset.
+function srSnaps(snaps) {
+  if (!snaps?.length) return snaps;
+  const filtered = snaps.filter(s => Date.parse(s.ts) >= SEASON_START_UTC);
+  return filtered.length >= 2 ? filtered : snaps;
+}
+
 // Filter out clearly-broken snapshots (API hiccups that return 0 / drop SR values).
 // SR is monotonic within a season — any meaningful drop is a bad reading. We also
 // drop snapshots where either side has seasonSr <= 0.
@@ -1958,16 +1971,18 @@ function render(data) {
   }
   document.getElementById("updated").textContent    = timeAgo(data.updated || cur.ts);
 
-  renderHero(cur, snaps);
-  renderSrSpotlight(cur, snaps);
-  renderTnaSpotlight(cur, snaps);
-  renderGuildCard("card-left",  "left",  cur, snaps);
-  renderGuildCard("card-right", "right", cur, snaps);
+  const srSnapsList = srSnaps(snaps); // SR resets at season boundary; everything else continues
+
+  renderHero(cur, srSnapsList);
+  renderSrSpotlight(cur, srSnapsList);
+  renderTnaSpotlight(cur, srSnapsList);
+  renderGuildCard("card-left",  "left",  cur, snaps, srSnapsList);
+  renderGuildCard("card-right", "right", cur, snaps, srSnapsList);
   renderActivity(cur, snaps);
   renderRaidTable(cur);
 
-  drawSrLine(snaps);
-  drawGapLine(snaps);
+  drawSrLine(srSnapsList);
+  drawGapLine(srSnapsList);
   drawRaidsBar(cur);
   drawRaidsPerDay(snaps);
   drawDailyBreakdown("left",  "ch-daily-left",  snaps);
@@ -1980,7 +1995,7 @@ function render(data) {
   drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
   drawCounterSinceStart("raidsTotal", "ch-raids-total", snaps, s => s.left.raids, s => s.right.raids);
   drawCounterSinceStart("warsTotal",  "ch-wars-total",  snaps, s => s.left.wars,  s => s.right.wars);
-  drawPerRaidTrends(snaps);
+  drawPerRaidTrends(srSnapsList);
 }
 
 async function load() {
