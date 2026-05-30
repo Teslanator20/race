@@ -1893,9 +1893,51 @@ function drawCounterByHour(key, canvasId, snaps, getL, getR) {
 }
 
 // ─── Main render ───────────────────────────────────────
+// Filter out clearly-broken snapshots (API hiccups that return 0 / drop SR values).
+// SR is monotonic within a season — any meaningful drop is a bad reading. We also
+// drop snapshots where either side has seasonSr <= 0.
+function sanitizeSnapshots(snaps) {
+  if (!snaps?.length) return snaps;
+  const SR_DROP_TOLERANCE = 0.005; // allow tiny drops (<0.5%) from rounding; reject larger
+  const out = [];
+  let lastGoodLeftSr = 0, lastGoodRightSr = 0;
+  let lastGoodLeftPer = {}, lastGoodRightPer = {};
+  let lastSeason = null;
+  for (const s of snaps) {
+    const lSr = s.left?.seasonSr  ?? 0;
+    const rSr = s.right?.seasonSr ?? 0;
+    if (lSr <= 0 || rSr <= 0) continue;
+
+    const seasonChanged = lastSeason != null && s.season !== lastSeason;
+    if (seasonChanged) { lastGoodLeftSr = 0; lastGoodRightSr = 0; lastGoodLeftPer = {}; lastGoodRightPer = {}; }
+
+    if (lSr < lastGoodLeftSr  * (1 - SR_DROP_TOLERANCE)) continue;
+    if (rSr < lastGoodRightSr * (1 - SR_DROP_TOLERANCE)) continue;
+
+    // per-raid checks
+    let perRaidBad = false;
+    for (const k of Object.keys(s.left?.perRaid || {})) {
+      const v = s.left.perRaid[k]?.sr ?? 0;
+      if (v < (lastGoodLeftPer[k] ?? 0) * (1 - SR_DROP_TOLERANCE)) { perRaidBad = true; break; }
+    }
+    if (!perRaidBad) for (const k of Object.keys(s.right?.perRaid || {})) {
+      const v = s.right.perRaid[k]?.sr ?? 0;
+      if (v < (lastGoodRightPer[k] ?? 0) * (1 - SR_DROP_TOLERANCE)) { perRaidBad = true; break; }
+    }
+    if (perRaidBad) continue;
+
+    out.push(s);
+    lastGoodLeftSr = lSr; lastGoodRightSr = rSr;
+    for (const k of Object.keys(s.left?.perRaid  || {})) lastGoodLeftPer[k]  = s.left.perRaid[k]?.sr  ?? lastGoodLeftPer[k]  ?? 0;
+    for (const k of Object.keys(s.right?.perRaid || {})) lastGoodRightPer[k] = s.right.perRaid[k]?.sr ?? lastGoodRightPer[k] ?? 0;
+    lastSeason = s.season;
+  }
+  return out;
+}
+
 function render(data) {
   lastData = data;
-  const snaps = data.snapshots || [];
+  const snaps = sanitizeSnapshots(data.snapshots || []);
   if (!snaps.length) return;
   const cur = snaps[snaps.length - 1];
 
