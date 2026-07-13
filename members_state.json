@@ -1,9 +1,9 @@
 {
-  "updated": "2026-07-13T07:50:41.512Z",
+  "updated": "2026-07-13T07:54:22.161Z",
   "left": {
     "name": "Sequoia",
     "prefix": "SEQ",
-    "online": 11,
+    "online": 10,
     "total": 148,
     "members": [
       {
@@ -396,8 +396,8 @@
         "uuid": "9e764181-d72a-4054-b499-f429b64d82c2",
         "rank": "strategist",
         "joined": "2026-01-28T21:41:11.187000Z",
-        "online": true,
-        "server": "EU16",
+        "online": false,
+        "server": null,
         "contributed": 10434615062905,
         "contributionRank": 18,
         "guildRaidsTotal": 4041
@@ -1639,7 +1639,7 @@
   "right": {
     "name": "Aequitas",
     "prefix": "Aeq",
-    "online": 9,
+    "online": 11,
     "total": 139,
     "members": [
       {
@@ -1713,8 +1713,8 @@
         "uuid": "8dd19b86-d4d5-43cc-b2c9-77b1f4ac739b",
         "rank": "chief",
         "joined": "2025-05-06T11:24:31.736000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "AS22",
         "contributed": 10732965764693,
         "contributionRank": 6,
         "guildRaidsTotal": 5650
@@ -1955,8 +1955,8 @@
         "uuid": "4b1a7a38-6640-4924-985f-859668cf4d5f",
         "rank": "strategist",
         "joined": "2026-04-06T04:45:17.546000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "NA13",
         "contributed": 6373185843180,
         "contributionRank": 15,
         "guildRaidsTotal": 3377
@@ -2193,6 +2193,17 @@
         "guildRaidsTotal": 381
       },
       {
+        "username": "Korgir_",
+        "uuid": "d156b36c-5f24-4f20-8864-0302f3c8505e",
+        "rank": "strategist",
+        "joined": "2026-06-11T07:53:49.072000Z",
+        "online": false,
+        "server": null,
+        "contributed": 824185757934,
+        "contributionRank": 60,
+        "guildRaidsTotal": 1908
+      },
+      {
         "username": "bruhcoins",
         "uuid": "fcf1ffde-b6d8-4f8a-b664-fdfb9b5cc0e4",
         "rank": "strategist",
@@ -2407,7 +2418,7 @@
         "rank": "captain",
         "joined": "2026-02-11T14:22:55.323000Z",
         "online": true,
-        "server": "AS19",
+        "server": "AS2",
         "contributed": 1441040864075,
         "contributionRank": 44,
         "guildRaidsTotal": 557
@@ -3018,17 +3029,6 @@
         "guildRaidsTotal": 0
       },
       {
-        "username": "Korgir_",
-        "uuid": "d156b36c-5f24-4f20-8864-0302f3c8505e",
-        "rank": "recruit",
-        "joined": "2026-06-11T07:53:49.072000Z",
-        "online": false,
-        "server": null,
-        "contributed": 824185757934,
-        "contributionRank": 60,
-        "guildRaidsTotal": 1908
-      },
-      {
         "username": "_paxq",
         "uuid": "eb9d9f24-f012-49d5-94ae-d9211e66b61d",
         "rank": "recruit",
@@ -3133,7 +3133,7 @@
         "rank": "recruit",
         "joined": "2026-06-30T06:21:07.847000Z",
         "online": true,
-        "server": "NA15",
+        "server": "NA13",
         "contributed": 0,
         "contributionRank": 136,
         "guildRaidsTotal": 0
