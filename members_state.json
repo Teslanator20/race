@@ -1,9 +1,9 @@
 {
-  "updated": "2026-07-13T16:10:42.947Z",
+  "updated": "2026-07-13T16:15:29.995Z",
   "left": {
     "name": "Sequoia",
     "prefix": "SEQ",
-    "online": 23,
+    "online": 22,
     "total": 149,
     "members": [
       {
@@ -22,8 +22,8 @@
         "uuid": "35f63806-4f34-4abb-99aa-ca54a5328696",
         "rank": "chief",
         "joined": "2025-01-02T15:50:20.838000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "EU7",
         "contributed": 38252791998947,
         "contributionRank": 1,
         "guildRaidsTotal": 15321
@@ -726,8 +726,8 @@
         "uuid": "b7a15bf5-01f0-45fb-a682-800028fca545",
         "rank": "strategist",
         "joined": "2026-01-31T14:13:37.931000Z",
-        "online": true,
-        "server": "AS19",
+        "online": false,
+        "server": null,
         "contributed": 2218563067909,
         "contributionRank": 61,
         "guildRaidsTotal": 1197
@@ -760,8 +760,8 @@
         "rank": "strategist",
         "joined": "2026-06-25T19:35:00.105000Z",
         "online": true,
-        "server": "EU2",
-        "contributed": 1842754949343,
+        "server": "EU21",
+        "contributed": 1845346728456,
         "contributionRank": 68,
         "guildRaidsTotal": 4480
       },
@@ -1118,6 +1118,17 @@
         "guildRaidsTotal": 501
       },
       {
+        "username": "Gurrnos",
+        "uuid": "e53f1495-392e-43c0-99a8-5e6779909d2f",
+        "rank": "captain",
+        "joined": "2026-06-18T15:12:34.396000Z",
+        "online": true,
+        "server": "EU21",
+        "contributed": 951187042683,
+        "contributionRank": 85,
+        "guildRaidsTotal": 899
+      },
+      {
         "username": "Attila7",
         "uuid": "3c79f711-d764-4a0d-9b27-81649c5fadde",
         "rank": "captain",
@@ -1125,19 +1136,8 @@
         "online": false,
         "server": null,
         "contributed": 948614475813,
-        "contributionRank": 85,
-        "guildRaidsTotal": 1064
-      },
-      {
-        "username": "Gurrnos",
-        "uuid": "e53f1495-392e-43c0-99a8-5e6779909d2f",
-        "rank": "captain",
-        "joined": "2026-06-18T15:12:34.396000Z",
-        "online": true,
-        "server": "EU2",
-        "contributed": 948595263570,
         "contributionRank": 86,
-        "guildRaidsTotal": 899
+        "guildRaidsTotal": 1064
       },
       {
         "username": "DoctorAgency",
@@ -1155,8 +1155,8 @@
         "uuid": "93d1db6e-b751-4ffc-8d7c-ca14fc00a7e0",
         "rank": "captain",
         "joined": "2026-02-24T02:21:55.098000Z",
-        "online": true,
-        "server": "NA4",
+        "online": false,
+        "server": null,
         "contributed": 868493121119,
         "contributionRank": 94,
         "guildRaidsTotal": 1723
@@ -1244,8 +1244,8 @@
         "rank": "captain",
         "joined": "2026-06-29T16:00:08.269000Z",
         "online": true,
-        "server": "EU2",
-        "contributed": 243627236622,
+        "server": "EU21",
+        "contributed": 246219015735,
         "contributionRank": 122,
         "guildRaidsTotal": 1737
       },
@@ -1332,8 +1332,8 @@
         "rank": "recruiter",
         "joined": "2026-06-20T00:29:34.849000Z",
         "online": true,
-        "server": "EU2",
-        "contributed": 642761220024,
+        "server": "EU21",
+        "contributed": 645352999137,
         "contributionRank": 102,
         "guildRaidsTotal": 0
       },
@@ -1650,7 +1650,7 @@
   "right": {
     "name": "Aequitas",
     "prefix": "Aeq",
-    "online": 11,
+    "online": 12,
     "total": 138,
     "members": [
       {
@@ -1680,8 +1680,8 @@
         "uuid": "f05d3fa5-1c2c-4acf-8925-af1d4894d3d7",
         "rank": "chief",
         "joined": "2024-02-20T14:52:55.148000Z",
-        "online": true,
-        "server": "AS9",
+        "online": false,
+        "server": null,
         "contributed": 19209880495162,
         "contributionRank": 2,
         "guildRaidsTotal": 8490
@@ -1933,8 +1933,8 @@
         "uuid": "7cde81cb-1d54-498b-a6be-4c34459ff7fa",
         "rank": "strategist",
         "joined": "2025-11-16T07:24:39.881000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "NA23",
         "contributed": 8467342362171,
         "contributionRank": 9,
         "guildRaidsTotal": 3802
@@ -2902,7 +2902,7 @@
         "rank": "recruiter",
         "joined": "2026-05-17T03:10:46.049000Z",
         "online": true,
-        "server": "NA22",
+        "server": "NA23",
         "contributed": 165873863232,
         "contributionRank": 103,
         "guildRaidsTotal": 132
@@ -2946,7 +2946,7 @@
         "rank": "recruiter",
         "joined": "2026-06-09T20:09:44.275000Z",
         "online": true,
-        "server": "EU23",
+        "server": "NA23",
         "contributed": 129635294329,
         "contributionRank": 109,
         "guildRaidsTotal": 50
@@ -3132,8 +3132,8 @@
         "uuid": "467414b9-b1e4-4a7c-8df0-fbc268b43c7c",
         "rank": "recruit",
         "joined": "2026-06-30T06:21:07.847000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "EU4",
         "contributed": 0,
         "contributionRank": 135,
         "guildRaidsTotal": 0
