@@ -1,24 +1,6 @@
 {
   "events": [
     {
-      "ts": "2026-05-20T23:05:17.802Z",
-      "guild": "Sequoia",
-      "uuid": "d53dddbf-c5f0-4c51-8fe8-57ce14885768",
-      "username": "Guildsman",
-      "type": "joined",
-      "rank": "recruit",
-      "joinedAt": "2026-05-20T23:02:33.502000Z",
-      "raidsTotal": 0
-    },
-    {
-      "ts": "2026-05-20T23:05:17.802Z",
-      "guild": "Aequitas",
-      "uuid": "d53dddbf-c5f0-4c51-8fe8-57ce14885768",
-      "username": "Guildsman",
-      "type": "left",
-      "from": "recruiter"
-    },
-    {
       "ts": "2026-05-20T23:40:24.065Z",
       "guild": "Aequitas",
       "uuid": "d10c65a1-5dd3-4715-a5f2-40eea297a133",
@@ -9824,7 +9806,16 @@
       "type": "promoted",
       "from": "recruit",
       "to": "recruiter"
+    },
+    {
+      "ts": "2026-07-19T23:05:25.669Z",
+      "guild": "Sequoia",
+      "uuid": "5004d72d-c728-41d1-878c-931172315eef",
+      "username": "AgentBlushy",
+      "type": "demoted",
+      "from": "recruiter",
+      "to": "recruit"
     }
   ],
-  "updated": "2026-07-19T23:00:44.115Z"
+  "updated": "2026-07-19T23:05:25.669Z"
 }
