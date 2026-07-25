@@ -1686,10 +1686,12 @@ function renderSpot({ elId, title, leftVal, rightVal, leftRank, rightRank, leftN
   });
 }
 
-function renderSrSpotlight(cur, snaps) {
+// snaps  = current-season snapshots (Season SR values + SR chart)
+// allSnaps = full history (wars / guild raids are all-time counters, they don't reset)
+function renderSrSpotlight(cur, snaps, allSnaps = snaps) {
   // wars done in 24h / 7d / 14d
-  const wL = [delta(snaps, "left.wars",  86400_000), delta(snaps, "left.wars",  7*86400_000), delta(snaps, "left.wars",  14*86400_000)];
-  const wR = [delta(snaps, "right.wars", 86400_000), delta(snaps, "right.wars", 7*86400_000), delta(snaps, "right.wars", 14*86400_000)];
+  const wL = [delta(allSnaps, "left.wars",  86400_000), delta(allSnaps, "left.wars",  7*86400_000), delta(allSnaps, "left.wars",  14*86400_000)];
+  const wR = [delta(allSnaps, "right.wars", 86400_000), delta(allSnaps, "right.wars", 7*86400_000), delta(allSnaps, "right.wars", 14*86400_000)];
   const warsTable = `
     <table class="spot-table">
       <thead>
@@ -1718,8 +1720,8 @@ function renderSrSpotlight(cur, snaps) {
     leftVal: cur.left.seasonSr, rightVal: cur.right.seasonSr,
     leftRank: null, rightRank: null,
     completionsRow: {
-      left:  [delta(snaps, "left.raids",  86400_000), delta(snaps, "left.raids",  7*86400_000),  delta(snaps, "left.raids",  14*86400_000)],
-      right: [delta(snaps, "right.raids", 86400_000), delta(snaps, "right.raids", 7*86400_000),  delta(snaps, "right.raids", 14*86400_000)],
+      left:  [delta(allSnaps, "left.raids",  86400_000), delta(allSnaps, "left.raids",  7*86400_000),  delta(allSnaps, "left.raids",  14*86400_000)],
+      right: [delta(allSnaps, "right.raids", 86400_000), delta(allSnaps, "right.raids", 7*86400_000),  delta(allSnaps, "right.raids", 14*86400_000)],
     },
     secondaryHtml: warsTable,
     snaps,
@@ -1732,7 +1734,7 @@ function renderSrSpotlight(cur, snaps) {
     getCompL: s => s.left.raids  ?? 0,
     getCompR: s => s.right.raids ?? 0,
     compLabel: "guild raids",
-    compSnaps: snaps, // SR-filtered snaps (clean post-season-start data)
+    compSnaps: allSnaps, // guild raids are all-time — keep the full window
   });
 }
 
@@ -1914,16 +1916,18 @@ function drawCounterByHour(key, canvasId, snaps, getL, getR) {
 }
 
 // ─── Main render ───────────────────────────────────────
-// Season reset: SR values reset; raids/wars/territories do NOT.
-// Berlin 30.05.2026 01:00 CEST = 29.05.2026 23:00 UTC
-const SEASON_START_UTC = Date.parse("2026-05-29T23:00:00Z");
-
-// Filter snapshots used for SR-based views: only those at/after the season-start cutoff.
-// Falls back to all snapshots if the cutoff hasn't passed yet (so the page stays useful
-// before the reset). Once snapshots accumulate after the cutoff, SR charts auto-reset.
+// Season reset: guild Season SR resets to 0 at each new season.
+// Raids/wars/territories and the per-raid (all-time) SR leaderboards do NOT reset.
+//
+// Filter snapshots used for Season-SR views: only those from the current season, taken
+// from the newest snapshot's season number — so the hero, SR spotlight and SR/gap charts
+// auto-reset the moment the API reports a new season. Falls back to all snapshots for the
+// first ~10 minutes of a new season, so the page never renders an empty chart.
 function srSnaps(snaps) {
   if (!snaps?.length) return snaps;
-  const filtered = snaps.filter(s => Date.parse(s.ts) >= SEASON_START_UTC);
+  const curSeason = snaps[snaps.length - 1].season;
+  if (curSeason == null) return snaps;
+  const filtered = snaps.filter(s => s.season === curSeason);
   return filtered.length >= 2 ? filtered : snaps;
 }
 
@@ -1992,11 +1996,11 @@ function render(data) {
   }
   document.getElementById("updated").textContent    = timeAgo(data.updated || cur.ts);
 
-  const srSnapsList = srSnaps(snaps); // SR resets at season boundary; everything else continues
+  const srSnapsList = srSnaps(snaps); // Season SR resets at season boundary; everything else continues
 
   renderHero(cur, srSnapsList);
-  renderSrSpotlight(cur, srSnapsList);
-  renderTnaSpotlight(cur, srSnapsList);
+  renderSrSpotlight(cur, srSnapsList, snaps);
+  renderTnaSpotlight(cur, snaps); // per-raid SR is all-time — no season reset
   renderGuildCard("card-left",  "left",  cur, snaps, srSnapsList);
   renderGuildCard("card-right", "right", cur, snaps, srSnapsList);
   renderActivity(cur, snaps);
@@ -2016,7 +2020,7 @@ function render(data) {
   drawCounterByHour("wars-hod",  "ch-wars-hod",  snaps, s => s.left.wars,  s => s.right.wars);
   drawCounterSinceStart("raidsTotal", "ch-raids-total", snaps, s => s.left.raids, s => s.right.raids);
   drawCounterSinceStart("warsTotal",  "ch-wars-total",  snaps, s => s.left.wars,  s => s.right.wars);
-  drawPerRaidTrends(srSnapsList);
+  drawPerRaidTrends(snaps); // per-raid SR is all-time — no season reset
 }
 
 async function load() {
