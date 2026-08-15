@@ -1,16 +1,6 @@
 {
   "events": [
     {
-      "ts": "2026-06-16T19:01:01.034Z",
-      "guild": "Sequoia",
-      "uuid": "357ba2b3-efa4-48cf-8aef-55ef4194d948",
-      "username": "D4rk_K1nG_99",
-      "type": "joined",
-      "rank": "recruit",
-      "joinedAt": "2026-06-16T18:55:42.112000Z",
-      "raidsTotal": 178
-    },
-    {
       "ts": "2026-06-16T20:20:39.930Z",
       "guild": "Sequoia",
       "uuid": "edf7c11e-7ea7-4236-a593-6b6c5f68ec64",
@@ -9681,7 +9671,26 @@
       "type": "promoted",
       "from": "recruit",
       "to": "recruiter"
+    },
+    {
+      "ts": "2026-08-15T19:05:28.183Z",
+      "guild": "Sequoia",
+      "uuid": "5a352de7-eff8-4b70-aef3-d01966806ee8",
+      "username": "WynnExtras",
+      "type": "joined",
+      "rank": "recruiter",
+      "joinedAt": "2026-08-15T19:00:20.986000Z",
+      "raidsTotal": 0
+    },
+    {
+      "ts": "2026-08-15T19:05:28.183Z",
+      "guild": "Sequoia",
+      "uuid": "7d4a1e22-00e2-45f8-b7b4-90a6b0dd984b",
+      "username": "sparkerer",
+      "type": "demoted",
+      "from": "recruiter",
+      "to": "recruit"
     }
   ],
-  "updated": "2026-08-15T19:00:39.493Z"
+  "updated": "2026-08-15T19:05:28.183Z"
 }
