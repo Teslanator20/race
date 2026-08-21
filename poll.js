@@ -6,7 +6,13 @@ const MEMBERS_STATE_FILE = "members_state.json";
 const EVENTS_FILE       = "events.json";
 const MEMBER_RAIDS_FILE  = "member_raids.json";
 
-const RETAIN_DAYS       = 14;
+const RETAIN_DAYS       = 14;   // hard floor: kept even across a season change
+// On top of that floor every snapshot of the current season is kept, thinned by age so the
+// file stays small enough to ship to every page load.
+const SNAPSHOT_TIERS = [
+  { olderThanDays: 14, bucketMinutes: 120 },
+  { olderThanDays: 3,  bucketMinutes: 30 },
+];
 const EVENTS_RETAIN_DAYS = 60;
 const RANK_ORDER = ["owner", "chief", "strategist", "captain", "recruiter", "recruit"];
 const RAID_LBS = {
@@ -151,6 +157,38 @@ function summarize(name, data, raidLbs) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Snapshot retention
+// ──────────────────────────────────────────────────────────────
+function bucketMsForAge(ageMs) {
+  for (const t of SNAPSHOT_TIERS) {
+    if (ageMs >= t.olderThanDays * 86400_000) return t.bucketMinutes * 60_000;
+  }
+  return 0;
+}
+
+// Keeps the whole current season plus a RETAIN_DAYS floor, downsampling older entries to
+// the first one per bucket. Buckets are epoch-aligned, so re-running this is stable: an
+// entry only ever drops out when it ages into a coarser tier.
+function pruneSnapshots(list, nowMs) {
+  const season = list.length ? list[list.length - 1].season : null;
+  const floor = nowMs - RETAIN_DAYS * 86400_000;
+  const out = [];
+  let lastKey = null;
+  for (const s of list) {
+    const t = new Date(s.ts).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (t < floor && !(season != null && s.season === season)) continue;
+    const bucketMs = bucketMsForAge(nowMs - t);
+    if (bucketMs === 0) { out.push(s); lastKey = null; continue; }
+    const key = bucketMs + ":" + Math.floor(t / bucketMs);
+    if (key === lastKey) continue;
+    out.push(s);
+    lastKey = key;
+  }
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────────
 // Event detection
 // ──────────────────────────────────────────────────────────────
 function rankIdx(r) { return RANK_ORDER.indexOf(r); }
@@ -223,8 +261,7 @@ async function main() {
   const history = await loadJson(HISTORY_FILE, { snapshots: [] });
   if (!Array.isArray(history.snapshots)) history.snapshots = [];
   history.snapshots.push(snapshot);
-  const cutoff = Date.now() - RETAIN_DAYS * 86400_000;
-  history.snapshots = history.snapshots.filter(s => new Date(s.ts).getTime() >= cutoff);
+  history.snapshots = pruneSnapshots(history.snapshots, Date.now());
   history.updated = ts;
   history.config = { left: guildsCfg.left, right: guildsCfg.right };
   await writeFile(HISTORY_FILE, JSON.stringify(history, null, 2) + "\n");

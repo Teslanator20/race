@@ -592,8 +592,9 @@
   <div class="range-floating" id="range-bar">
     <span class="lbl-mini">View</span>
     <button data-range="1">24h</button>
-    <button data-range="7" class="active">7d</button>
+    <button data-range="7">7d</button>
     <button data-range="14">14d</button>
+    <button data-range="season" class="active">Season</button>
   </div>
 
   <!-- HERO -->
@@ -667,7 +668,7 @@
   </div>
 
   <!-- PER-RAID TRENDS -->
-  <h2 id="h2-per-raid-trends">Per-raid SR — last 7 days</h2>
+  <h2 id="h2-per-raid-trends">Per-raid SR — this season</h2>
   <section class="raid-trends" id="raid-trends">
     <div class="rt-card"><div class="rt-title">Grootslang</div><div class="rt-canvas"><canvas id="rt-grootslang"></canvas></div></div>
     <div class="rt-card"><div class="rt-title">Nameless (TNA)</div><div class="rt-canvas"><canvas id="rt-nameless"></canvas></div></div>
@@ -680,7 +681,7 @@
   <h2>Trends</h2>
   <section class="charts">
     <div class="ccard full">
-      <div class="ccard-title" id="t-sr">Season SR — last 7 days
+      <div class="ccard-title" id="t-sr">Season SR — this season
         <span class="legend">
           <span><span class="dot" style="background:var(--left)"></span><span id="lg-left-1">Left</span></span>
           <span><span class="dot" style="background:var(--right)"></span><span id="lg-right-1">Right</span></span>
@@ -897,19 +898,23 @@ let lastData = null;
 let lastMembers = null;
 let lastEvents  = null;
 let lastMemberRaids = null;
-let rangeDays = Number(localStorage.getItem("rangeDays") || 7);
+const RANGE_SEASON = Infinity;
+function parseRange(v) { return v === "season" ? RANGE_SEASON : Number(v); }
+let rangeDays = parseRange(localStorage.getItem("rangeDays") ?? "season");
+if (Number.isNaN(rangeDays)) rangeDays = RANGE_SEASON;
+let seasonStartMs = null;
 
 // init range bar
 (function () {
   document.querySelectorAll("#range-bar button").forEach(b => {
-    if (Number(b.dataset.range) === rangeDays) {
+    if (parseRange(b.dataset.range) === rangeDays) {
       b.classList.add("active");
     } else {
       b.classList.remove("active");
     }
     b.addEventListener("click", () => {
-      rangeDays = Number(b.dataset.range);
-      localStorage.setItem("rangeDays", String(rangeDays));
+      rangeDays = parseRange(b.dataset.range);
+      localStorage.setItem("rangeDays", b.dataset.range);
       document.querySelectorAll("#range-bar button").forEach(x => x.classList.remove("active"));
       b.classList.add("active");
       if (lastData) {
@@ -921,7 +926,8 @@ let rangeDays = Number(localStorage.getItem("rangeDays") || 7);
 })();
 
 function rangeLabel() {
-  return rangeDays === 1 ? "24 h" : `${rangeDays} d`;
+  if (rangeDays === RANGE_SEASON) return "this season";
+  return rangeDays === 1 ? "last 24 h" : `last ${rangeDays} d`;
 }
 
 // ─── Sections ──────────────────────────────────────────
@@ -960,6 +966,8 @@ function renderGuildCard(elId, side, cur, snaps, srSnapsList = snaps) {
 
 function renderActivity(cur, snaps) {
   const win = { "24h": 24*3600_000, "7d": 7*86400_000, "14d": 14*86400_000 };
+  const seasonMs = seasonStartMs ? Date.now() - seasonStartMs : null;
+  if (seasonMs) win["season"] = seasonMs;
   const buildDeltaCard = (gridId, field, formatter = fmtSigned) => {
     const grid = document.getElementById(gridId);
     const rows = [
@@ -988,6 +996,8 @@ function renderActivity(cur, snaps) {
   const rAvg24 = avg(snaps, "right.online", 24*3600_000);
   const lAvg7  = avg(snaps, "left.online",  7*86400_000);
   const rAvg7  = avg(snaps, "right.online", 7*86400_000);
+  const lAvgS  = seasonMs ? avg(snaps, "left.online",  seasonMs) : null;
+  const rAvgS  = seasonMs ? avg(snaps, "right.online", seasonMs) : null;
   onlineGrid.innerHTML = `
     <div class="a-label"></div>
     <div class="a-label left">${cur.left.name}</div>
@@ -1001,6 +1011,9 @@ function renderActivity(cur, snaps) {
     <div class="a-label">avg 7d</div>
     <div class="a-val left">${lAvg7 == null ? "—" : lAvg7.toFixed(1)}</div>
     <div class="a-val right">${rAvg7 == null ? "—" : rAvg7.toFixed(1)}</div>
+    <div class="a-label">avg season</div>
+    <div class="a-val left">${lAvgS == null ? "—" : lAvgS.toFixed(1)}</div>
+    <div class="a-val right">${rAvgS == null ? "—" : rAvgS.toFixed(1)}</div>
   `;
 }
 
@@ -1165,9 +1178,21 @@ function downsample(arr, max) {
   if (out[out.length-1] !== arr[arr.length-1]) out.push(arr[arr.length-1]);
   return out;
 }
+// Timestamp of the first snapshot belonging to the newest snapshot's season — the cutoff
+// the "Season" range uses instead of a rolling day count.
+function seasonStart(snaps) {
+  if (!snaps?.length) return null;
+  const curSeason = snaps[snaps.length - 1].season;
+  if (curSeason == null) return null;
+  const first = snaps.find(s => s.season === curSeason);
+  return first ? new Date(first.ts).getTime() : null;
+}
+
 function recentSnaps(snaps, days) {
-  const cutoff = Date.now() - days * 86400_000;
-  const recent = snaps.filter(s => new Date(s.ts).getTime() > cutoff);
+  const cutoff = days === RANGE_SEASON
+    ? (seasonStartMs ?? -Infinity)
+    : Date.now() - days * 86400_000;
+  const recent = snaps.filter(s => new Date(s.ts).getTime() >= cutoff);
   return recent.length > 1 ? recent : snaps;
 }
 
@@ -1978,6 +2003,7 @@ function render(data) {
   const snaps = sanitizeSnapshots(data.snapshots || []);
   if (!snaps.length) return;
   const cur = snaps[snaps.length - 1];
+  seasonStartMs = seasonStart(snaps);
 
   document.getElementById("season-eyebrow").textContent = `Season ${cur.season ?? "—"}`;
   document.getElementById("left-name").textContent  = cur.left.name;
@@ -1987,11 +2013,11 @@ function render(data) {
   document.getElementById("lg-left-2").textContent  = cur.left.name;
   document.getElementById("t-daily-left").textContent  = `Daily raids — ${cur.left.name}`;
   document.getElementById("t-daily-right").textContent = `Daily raids — ${cur.right.name}`;
-  document.getElementById("h2-per-raid-trends").textContent = `Per-raid SR — last ${rangeLabel()}`;
+  document.getElementById("h2-per-raid-trends").textContent = `Per-raid SR — ${rangeLabel()}`;
   const tsr = document.getElementById("t-sr");
   if (tsr) {
     const legend = tsr.querySelector(".legend");
-    tsr.firstChild.textContent = `Season SR — last ${rangeLabel()} `;
+    tsr.firstChild.textContent = `Season SR — ${rangeLabel()} `;
     if (legend) tsr.appendChild(legend);
   }
   document.getElementById("updated").textContent    = timeAgo(data.updated || cur.ts);
