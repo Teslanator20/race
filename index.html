@@ -646,7 +646,7 @@
       <div class="a-grid" id="act-online"></div>
     </div>
     <div class="a-card">
-      <div class="a-title" title="A wipe = territories dropped to 0–2. Consecutive low readings within an hour count once; a new wipe only counts after recovering above 15 territories. Single-snapshot drops from a high count are treated as API glitches and ignored.">Times wiped (0–2 terr)</div>
+      <div class="a-title" title="A wipe = territories dropped to 4 or below. Consecutive low readings within an hour count once; a new wipe only counts after recovering above 15 territories. Single-snapshot drops of more than 20 territories and the season rollover reset are treated as API/reset artifacts and ignored.">Times wiped (≤4 terr)</div>
       <div class="a-grid" id="act-wipes"></div>
       <div class="a-foot" id="act-wipes-foot"></div>
     </div>
@@ -1035,7 +1035,7 @@ function renderActivity(cur, snaps) {
 //   * low readings less than WIPE_MERGE apart collapse into one wipe …
 //   * … unless the guild recovered above WIPE_RESET territories in between, which means
 //     it got wiped again rather than still sitting at zero
-const WIPE_LOW = 2, WIPE_APPROACH = 10, WIPE_RESET = 15, WIPE_MAX_STEP = 20, WIPE_MERGE = 3600_000;
+const WIPE_LOW = 4, WIPE_APPROACH = 12, WIPE_RESET = 15, WIPE_MAX_STEP = 20, WIPE_MERGE = 3600_000;
 
 function wipeEvents(snaps, side) {
   const out = [];
