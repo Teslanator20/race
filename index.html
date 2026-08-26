@@ -1027,22 +1027,30 @@ function renderActivity(cur, snaps) {
 // Counting raw low snapshots is useless: polling is irregular (5 min … 2 h) and the
 // territory count oscillates (2 → 3 → 2) while a guild is being warred, so a naive
 // count reports dozens of "wipes" for a single one. Rules:
-//   * only count a low reading if the previous snapshot was already low (<= WIPE_APPROACH) —
-//     a jump straight from e.g. 59 to 2 and back to 65 is an API hiccup, not a wipe
+//   * the descent into the low zone must be gradual: the previous snapshot already
+//     <= WIPE_APPROACH, and no single step in the decline larger than WIPE_MAX_STEP.
+//     A jump straight from 59 to 2 and back to 65 is an API hiccup, not a wipe — and the
+//     global territory reset at a season rollover (35 -> 0 -> 0 -> rebuild) is not one either
+//   * a season change invalidates the running decline for the same reason
 //   * low readings less than WIPE_MERGE apart collapse into one wipe …
 //   * … unless the guild recovered above WIPE_RESET territories in between, which means
 //     it got wiped again rather than still sitting at zero
-const WIPE_LOW = 2, WIPE_APPROACH = 10, WIPE_RESET = 15, WIPE_MERGE = 3600_000;
+const WIPE_LOW = 2, WIPE_APPROACH = 10, WIPE_RESET = 15, WIPE_MAX_STEP = 20, WIPE_MERGE = 3600_000;
 
 function wipeEvents(snaps, side) {
   const out = [];
-  let lastLow = null, maxSince = 0;
+  let lastLow = null, maxSince = 0, broken = false, prevSeason = null;
   for (let i = 0; i < snaps.length; i++) {
     const v = snaps[i][side]?.territories;
+    const season = snaps[i].season;
     if (v == null) continue;
-    if (v > WIPE_LOW) { maxSince = Math.max(maxSince, v); continue; }
+    if (prevSeason != null && season !== prevSeason) broken = true; // season reset wipes everyone
+    prevSeason = season;
     const prev = i > 0 ? snaps[i - 1][side]?.territories : null;
-    if (prev == null || prev > WIPE_APPROACH) continue; // API glitch, not a gradual decline
+    if (prev != null && prev - v > WIPE_MAX_STEP) broken = true;    // implausible one-step drop
+    if (v > WIPE_APPROACH) { maxSince = Math.max(maxSince, v); broken = false; continue; }
+    if (v > WIPE_LOW) { maxSince = Math.max(maxSince, v); continue; }
+    if (broken || prev == null || prev > WIPE_APPROACH) continue;
     const ts = new Date(snaps[i].ts).getTime();
     if (lastLow == null || ts - lastLow > WIPE_MERGE || maxSince >= WIPE_RESET) {
       out.push({ ts: snaps[i].ts, territories: v });
