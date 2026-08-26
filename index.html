@@ -343,6 +343,26 @@
     margin-left: auto; font: 500 11px/1 'Inter', sans-serif;
     letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
   }
+  .presence-controls {
+    display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; margin-bottom: 18px;
+  }
+  .presence-controls label {
+    font: 600 10.5px/1.5 'Inter', sans-serif; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .presence-controls input, .presence-controls select {
+    font: 600 13px/1 'Inter', sans-serif; letter-spacing: 0; text-transform: none;
+    color: var(--ink); background: var(--card); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 6px 8px;
+  }
+  .presence-note { font: 400 11.5px/1.5 'Inter', sans-serif; color: var(--muted); margin-left: auto; }
+  .mlist .bar {
+    display: inline-block; height: 6px; border-radius: 3px; vertical-align: middle;
+    margin-right: 8px; min-width: 2px; opacity: .75;
+  }
+  .mcard.left  .mlist .bar { background: var(--left); }
+  .mcard.right .mlist .bar { background: var(--right); }
   .mlist { list-style: none; padding: 0; margin: 0; }
   .mlist li {
     display: grid; grid-template-columns: 1fr auto;
@@ -769,6 +789,40 @@
   </section>
 
   <!-- MEMBERS -->
+  <!-- PRESENCE -->
+  <h2>Who is online when</h2>
+  <section class="a-card" id="presence-card">
+    <div class="presence-controls">
+      <label>Time <input type="time" id="pr-time"></label>
+      <label>± <select id="pr-tol">
+        <option value="15">15 min</option>
+        <option value="30" selected>30 min</option>
+        <option value="60">60 min</option>
+      </select></label>
+      <label>Rank <select id="pr-rank">
+        <option value="chiefs" selected>owner + chief</option>
+        <option value="all">all ranks</option>
+        <option value="owner">owner</option>
+        <option value="chief">chief</option>
+        <option value="strategist">strategist</option>
+        <option value="captain">captain</option>
+        <option value="recruiter">recruiter</option>
+        <option value="recruit">recruit</option>
+      </select></label>
+      <span class="presence-note" id="pr-note"></span>
+    </div>
+    <div class="members-grid">
+      <div class="mcard left">
+        <div class="mcard-head"><span class="name" id="pr-left-name">—</span><span class="sub" id="pr-left-sub"></span></div>
+        <ul class="mlist" id="pr-left-list"><li class="empty">loading…</li></ul>
+      </div>
+      <div class="mcard right">
+        <div class="mcard-head"><span class="name" id="pr-right-name">—</span><span class="sub" id="pr-right-sub"></span></div>
+        <ul class="mlist" id="pr-right-list"><li class="empty">loading…</li></ul>
+      </div>
+    </div>
+  </section>
+
   <h2>Members</h2>
   <section class="members-grid">
     <div class="mcard left">
@@ -903,6 +957,7 @@ let lastData = null;
 let lastMembers = null;
 let lastEvents  = null;
 let lastMemberRaids = null;
+let lastPresence = null;
 const RANGE_SEASON = Infinity;
 function parseRange(v) { return v === "season" ? RANGE_SEASON : Number(v); }
 let rangeDays = parseRange(localStorage.getItem("rangeDays") ?? "season");
@@ -1483,6 +1538,101 @@ function drawPerRaidTrends(snaps) {
 }
 
 // ─── Members rendering ─────────────────────────────────
+// ─── Presence: who is online at a given time of day ────
+// presence.json stores per member the online sessions observed by the poller as
+// [startSec, endSec, server]. For a target time of day we ask, per local day covered by
+// the log: was this member inside a session at that time (± tolerance)? The hit rate is
+// what makes "Kaeya is on at 16:30 most days" different from "Kaeya was on once".
+const RANK_GROUPS = {
+  chiefs: ["owner", "chief"],
+  all: null,
+};
+
+function presenceStats(guildMembers, targetMin, tolMin, rankFilter) {
+  const ranks = RANK_GROUPS[rankFilter] ?? (rankFilter === "all" ? null : [rankFilter]);
+  const dayMs = 86400_000;
+  // days covered by the log, from the oldest session we have
+  let oldest = Infinity, newest = 0;
+  for (const m of Object.values(guildMembers)) {
+    for (const s of m.sessions) {
+      oldest = Math.min(oldest, s[0] * 1000);
+      newest = Math.max(newest, s[1] * 1000);
+    }
+  }
+  if (!Number.isFinite(oldest)) return { rows: [], days: 0, from: null, to: null };
+  const firstDay = new Date(oldest); firstDay.setHours(0, 0, 0, 0);
+  const lastDay  = new Date(newest); lastDay.setHours(0, 0, 0, 0);
+  const days = Math.round((lastDay - firstDay) / dayMs) + 1;
+
+  const rows = [];
+  for (const [uuid, m] of Object.entries(guildMembers)) {
+    if (ranks && !ranks.includes(m.rank)) continue;
+    if (m.left) continue;
+    const hitDays = new Set();
+    let lastHit = null, server = null;
+    for (const [startSec, endSec, srv] of m.sessions) {
+      const start = startSec * 1000, end = endSec * 1000;
+      // walk every local day the session touches and test the target window on that day
+      const d = new Date(start); d.setHours(0, 0, 0, 0);
+      for (let t = d.getTime(); t <= end; t += dayMs) {
+        const winStart = t + (targetMin - tolMin) * 60_000;
+        const winEnd   = t + (targetMin + tolMin) * 60_000;
+        if (end >= winStart && start <= winEnd) {
+          hitDays.add(new Date(t).toDateString());
+          if (lastHit == null || end > lastHit) { lastHit = end; server = srv; }
+        }
+      }
+    }
+    if (!hitDays.size) continue;
+    rows.push({ uuid, username: m.username, rank: m.rank, hits: hitDays.size, rate: hitDays.size / days, lastHit, server });
+  }
+  rows.sort((a, b) => b.hits - a.hits || a.username.localeCompare(b.username));
+  return { rows, days, from: firstDay, to: lastDay };
+}
+
+function renderPresence() {
+  const card = document.getElementById("presence-card");
+  if (!card) return;
+  const timeEl = document.getElementById("pr-time");
+  const note = document.getElementById("pr-note");
+  if (!lastPresence?.guilds) {
+    note.textContent = "no presence history yet — the poller starts recording from its next run";
+    for (const side of ["left", "right"]) {
+      document.getElementById(`pr-${side}-list`).innerHTML = `<li class="empty">no data yet</li>`;
+    }
+    return;
+  }
+  const [hh, mm] = (timeEl.value || "00:00").split(":").map(Number);
+  const targetMin = hh * 60 + mm;
+  const tolMin = Number(document.getElementById("pr-tol").value);
+  const rankFilter = document.getElementById("pr-rank").value;
+
+  const names = { left: lastMembers?.left?.name, right: lastMembers?.right?.name };
+  let covered = 0, from = null, to = null;
+  for (const side of ["left", "right"]) {
+    const gname = names[side];
+    const guild = gname ? lastPresence.guilds[gname] : null;
+    document.getElementById(`pr-${side}-name`).textContent = gname || "—";
+    const list = document.getElementById(`pr-${side}-list`);
+    if (!guild) { list.innerHTML = `<li class="empty">no data</li>`; continue; }
+
+    const { rows, days, from: f, to: t } = presenceStats(guild, targetMin, tolMin, rankFilter);
+    covered = Math.max(covered, days); from = from || f; to = to || t;
+    document.getElementById(`pr-${side}-sub`).textContent = rows.length ? `${rows.length} seen at this time` : "";
+    list.innerHTML = rows.length
+      ? rows.slice(0, 25).map(r => `<li>
+          <div>
+            <span class="bar" style="width:${Math.max(2, Math.round(r.rate * 48))}px"></span>
+            <span class="uname">${r.username}</span><span class="rank-tag">${r.rank}</span>
+          </div>
+          <div class="meta"><b>${r.hits}</b>/${days} d · ${Math.round(r.rate * 100)}%${r.server ? ` · ${r.server}` : ""}</div>
+        </li>`).join("")
+      : `<li class="empty">nobody seen at this time</li>`;
+  }
+  const span = from && to ? `${from.toLocaleDateString()} – ${to.toLocaleDateString()}` : "—";
+  note.textContent = `${covered} day${covered === 1 ? "" : "s"} of history · ${span} · your local time`;
+}
+
 function renderMembersFromState(state, eventsLog) {
   if (!state) return;
   for (const side of ["left", "right"]) {
@@ -2127,11 +2277,12 @@ function render(data) {
 
 async function load() {
   try {
-    const [snapRes, memRes, evRes, mrRes] = await Promise.all([
+    const [snapRes, memRes, evRes, mrRes, prRes] = await Promise.all([
       fetch("snapshots.json?_=" + Date.now(),       { cache: "no-store" }),
       fetch("members_state.json?_=" + Date.now(),   { cache: "no-store" }).catch(() => null),
       fetch("events.json?_=" + Date.now(),          { cache: "no-store" }).catch(() => null),
       fetch("member_raids.json?_=" + Date.now(),    { cache: "no-store" }).catch(() => null),
+      fetch("presence.json?_=" + Date.now(),        { cache: "no-store" }).catch(() => null),
     ]);
     if (!snapRes.ok) throw new Error("HTTP " + snapRes.status);
     const data = await snapRes.json();
@@ -2139,14 +2290,26 @@ async function load() {
     try { if (memRes && memRes.ok) memberState = await memRes.json(); } catch {}
     try { if (evRes  && evRes.ok)  eventsLog   = await evRes.json();  } catch {}
     try { if (mrRes  && mrRes.ok)  memberRaids = await mrRes.json();  } catch {}
+    try { if (prRes  && prRes.ok)  lastPresence = await prRes.json();  } catch {}
     lastMembers = memberState;
     lastEvents  = eventsLog;
     lastMemberRaids = memberRaids;
     render(data);
     renderMembersFromState(memberState, eventsLog);
+    renderPresence();
   } catch (e) {
     document.getElementById("updated").textContent = "error";
     console.error(e);
+  }
+}
+
+// presence controls: default to the current time, re-query on every change
+{
+  const t = document.getElementById("pr-time");
+  const now = new Date();
+  t.value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  for (const id of ["pr-time", "pr-tol", "pr-rank"]) {
+    document.getElementById(id).addEventListener("change", renderPresence);
   }
 }
 

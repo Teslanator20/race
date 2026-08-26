@@ -5,6 +5,7 @@ const HISTORY_FILE      = "snapshots.json";
 const MEMBERS_STATE_FILE = "members_state.json";
 const EVENTS_FILE       = "events.json";
 const MEMBER_RAIDS_FILE  = "member_raids.json";
+const PRESENCE_FILE      = "presence.json";
 
 const RETAIN_DAYS       = 14;   // hard floor: kept even across a season change
 // On top of that floor every snapshot of the current season is kept, thinned by age so the
@@ -14,6 +15,12 @@ const SNAPSHOT_TIERS = [
   { olderThanDays: 3,  bucketMinutes: 30 },
 ];
 const EVENTS_RETAIN_DAYS = 60;
+const PRESENCE_RETAIN_DAYS = 21;
+// A session spans consecutive polls in which the member was seen online on the same server.
+// Polling is irregular (5 min … 2 h), so a session means "online at every observation in
+// this window", not "provably online the whole time". Beyond this gap the poller was down
+// rather than sampling, so the run is cut instead of painting over the blackout.
+const PRESENCE_MAX_GAP_MS = 3 * 3600_000;
 const RANK_ORDER = ["owner", "chief", "strategist", "captain", "recruiter", "recruit"];
 const RAID_LBS = {
   grootslang: "grootslangSrGuilds",
@@ -227,6 +234,49 @@ function detectEvents(prevGuild, newGuild, guildName, ts) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Presence history
+// ──────────────────────────────────────────────────────────────
+// The guild API reports each member's online flag and server, but only for right now, so
+// "who is usually online at 16:30" needs its own log. Per member we keep online sessions
+// as [startSec, endSec, server] with second-resolution epoch timestamps — far smaller than
+// one row per member per poll, and directly answerable for a time-of-day question.
+//
+// A session is extended while the member stays online on the same server at consecutive
+// polls. A server switch, a poll in which they were offline, or a poller outage longer
+// than PRESENCE_MAX_GAP_MS starts a new session.
+function updatePresence(prev, guilds, nowMs) {
+  const nowSec = Math.floor(nowMs / 1000);
+  const lastPollMs = prev?.lastPoll ? new Date(prev.lastPoll).getTime() : null;
+  const contiguous = lastPollMs != null && nowMs - lastPollMs <= PRESENCE_MAX_GAP_MS;
+  const cutoffSec = Math.floor((nowMs - PRESENCE_RETAIN_DAYS * 86400_000) / 1000);
+
+  const out = { updated: new Date(nowMs).toISOString(), lastPoll: new Date(nowMs).toISOString(), guilds: {} };
+  for (const g of guilds) {
+    const prevG = prev?.guilds?.[g.name] || {};
+    const cur = {};
+    for (const m of g.members) {
+      const old = prevG[m.uuid];
+      const sessions = (old?.sessions || []).filter(s => s[1] >= cutoffSec);
+      if (m.online) {
+        const last = sessions[sessions.length - 1];
+        const sameRun = last && contiguous && last[1] >= Math.floor(lastPollMs / 1000) - 60 && last[2] === (m.server ?? null);
+        if (sameRun) last[1] = nowSec;
+        else sessions.push([nowSec, nowSec, m.server ?? null]);
+      }
+      cur[m.uuid] = { username: m.username, rank: m.rank, sessions };
+    }
+    // members who left the guild keep their history until it ages out
+    for (const [uuid, old] of Object.entries(prevG)) {
+      if (cur[uuid]) continue;
+      const sessions = (old.sessions || []).filter(s => s[1] >= cutoffSec);
+      if (sessions.length) cur[uuid] = { ...old, sessions, left: true };
+    }
+    out.guilds[g.name] = cur;
+  }
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────────
 // File IO
 // ──────────────────────────────────────────────────────────────
 async function loadJson(path, fallback) {
@@ -302,12 +352,17 @@ async function main() {
     }
   }
 
+  // 5) per-member online sessions (for "who is online at what time of day")
+  const prevPresence = await loadJson(PRESENCE_FILE, null);
+  const presence = updatePresence(prevPresence, [newState.left, newState.right], Date.now());
+
   await writeFile(MEMBERS_STATE_FILE, JSON.stringify(newState, null, 2) + "\n");
   await writeFile(EVENTS_FILE, JSON.stringify(eventLog, null, 2) + "\n");
   await writeFile(MEMBER_RAIDS_FILE, JSON.stringify(newMr, null, 2) + "\n");
+  await writeFile(PRESENCE_FILE, JSON.stringify(presence) + "\n");
 
   const gap = snapshot.left.seasonSr - snapshot.right.seasonSr;
-  console.log(`OK season=${snapshot.season} L=${snapshot.left.seasonSr} R=${snapshot.right.seasonSr} gap=${gap} | online L=${snapshot.left.online}/${snapshot.left.memberCount} R=${snapshot.right.online}/${snapshot.right.memberCount} | snaps=${history.snapshots.length} events=${eventLog.events.length}`);
+  console.log(`OK season=${snapshot.season} L=${snapshot.left.seasonSr} R=${snapshot.right.seasonSr} gap=${gap} | online L=${snapshot.left.online}/${snapshot.left.memberCount} R=${snapshot.right.online}/${snapshot.right.memberCount} | snaps=${history.snapshots.length} events=${eventLog.events.length} presence=${Object.values(presence.guilds).reduce((n, g) => n + Object.values(g).reduce((k, m) => k + m.sessions.length, 0), 0)}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
