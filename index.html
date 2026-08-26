@@ -645,6 +645,11 @@
       <div class="a-title">Online</div>
       <div class="a-grid" id="act-online"></div>
     </div>
+    <div class="a-card">
+      <div class="a-title" title="A wipe = territories dropped to 0–2. Consecutive low readings within an hour count once; a new wipe only counts after recovering above 15 territories. Single-snapshot drops from a high count are treated as API glitches and ignored.">Times wiped (0–2 terr)</div>
+      <div class="a-grid" id="act-wipes"></div>
+      <div class="a-foot" id="act-wipes-foot"></div>
+    </div>
   </section>
 
   <!-- PER-RAID -->
@@ -1015,6 +1020,68 @@ function renderActivity(cur, snaps) {
     <div class="a-val left">${lAvgS == null ? "—" : lAvgS.toFixed(1)}</div>
     <div class="a-val right">${rAvgS == null ? "—" : rAvgS.toFixed(1)}</div>
   `;
+}
+
+// ─── Wipe detection ────────────────────────────────────
+// A "wipe" = the guild's territory count dropped to WIPE_LOW or below.
+// Counting raw low snapshots is useless: polling is irregular (5 min … 2 h) and the
+// territory count oscillates (2 → 3 → 2) while a guild is being warred, so a naive
+// count reports dozens of "wipes" for a single one. Rules:
+//   * only count a low reading if the previous snapshot was already low (<= WIPE_APPROACH) —
+//     a jump straight from e.g. 59 to 2 and back to 65 is an API hiccup, not a wipe
+//   * low readings less than WIPE_MERGE apart collapse into one wipe …
+//   * … unless the guild recovered above WIPE_RESET territories in between, which means
+//     it got wiped again rather than still sitting at zero
+const WIPE_LOW = 2, WIPE_APPROACH = 10, WIPE_RESET = 15, WIPE_MERGE = 3600_000;
+
+function wipeEvents(snaps, side) {
+  const out = [];
+  let lastLow = null, maxSince = 0;
+  for (let i = 0; i < snaps.length; i++) {
+    const v = snaps[i][side]?.territories;
+    if (v == null) continue;
+    if (v > WIPE_LOW) { maxSince = Math.max(maxSince, v); continue; }
+    const prev = i > 0 ? snaps[i - 1][side]?.territories : null;
+    if (prev == null || prev > WIPE_APPROACH) continue; // API glitch, not a gradual decline
+    const ts = new Date(snaps[i].ts).getTime();
+    if (lastLow == null || ts - lastLow > WIPE_MERGE || maxSince >= WIPE_RESET) {
+      out.push({ ts: snaps[i].ts, territories: v });
+    }
+    lastLow = ts;
+    maxSince = 0;
+  }
+  return out;
+}
+
+function renderWipes(cur, snaps) {
+  const grid = document.getElementById("act-wipes");
+  if (!grid) return;
+  // territories don't reset at a season boundary, but "wiped this season" is what we want
+  const seasonSnaps = srSnaps(snaps);
+  const l = wipeEvents(seasonSnaps, "left");
+  const r = wipeEvents(seasonSnaps, "right");
+  const now = Date.now();
+  const since = (evs, ms) => evs.filter(e => now - new Date(e.ts).getTime() <= ms).length;
+  const win = { season: null, "7d": 7*86400_000, "24h": 24*3600_000 };
+  const rows = [`<div class="a-label"></div><div class="a-label left">${cur.left.name}</div><div class="a-label right">${cur.right.name}</div>`];
+  for (const [lbl, ms] of Object.entries(win)) {
+    rows.push(`
+      <div class="a-label">${lbl}</div>
+      <div class="a-val left">${ms == null ? l.length : since(l, ms)}</div>
+      <div class="a-val right">${ms == null ? r.length : since(r, ms)}</div>
+    `);
+  }
+  grid.innerHTML = rows.join("");
+
+  const foot = document.getElementById("act-wipes-foot");
+  if (foot) {
+    const last = [
+      { name: cur.left.name,  ev: l[l.length - 1] },
+      { name: cur.right.name, ev: r[r.length - 1] },
+    ].filter(x => x.ev).sort((a, b) => new Date(b.ev.ts) - new Date(a.ev.ts))[0];
+    const season = seasonSnaps[seasonSnaps.length - 1]?.season;
+    foot.innerHTML = `<span>season ${season ?? "—"}</span><span>${last ? `last: ${last.name} · ${timeAgo(last.ev.ts)}` : "none recorded"}</span>`;
+  }
 }
 
 function renderHero(cur, snaps) {
@@ -2030,6 +2097,7 @@ function render(data) {
   renderGuildCard("card-left",  "left",  cur, snaps, srSnapsList);
   renderGuildCard("card-right", "right", cur, snaps, srSnapsList);
   renderActivity(cur, snaps);
+  renderWipes(cur, snaps);
   renderRaidTable(cur);
 
   drawSrLine(srSnapsList);
