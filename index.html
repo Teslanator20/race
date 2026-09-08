@@ -733,6 +733,11 @@
     </div>
 
     <div class="ccard">
+      <div class="ccard-title">Members over time</div>
+      <div class="ccard-canvas"><canvas id="ch-members"></canvas></div>
+    </div>
+
+    <div class="ccard">
       <div class="ccard-title" id="t-daily-left">Daily raids — left</div>
       <div class="ccard-canvas"><canvas id="ch-daily-left"></canvas></div>
     </div>
@@ -2088,6 +2093,10 @@ function drawOnlineAvg(snaps) {
     },
   });
 }
+function drawMembers(snaps) {
+  lineChart("members", "ch-members", snaps, s => s.left.memberCount ?? null, s => s.right.memberCount ?? null, rangeDays);
+}
+
 function drawTerritories(snaps) {
   lineChart("territories", "ch-territories", snaps, s => s.left.territories ?? 0, s => s.right.territories ?? 0, rangeDays);
 }
@@ -2265,6 +2274,7 @@ function render(data) {
   drawDailyBreakdown("left",  "ch-daily-left",  snaps);
   drawDailyBreakdown("right", "ch-daily-right", snaps);
   drawTerritories(snaps);
+  drawMembers(snaps);
   drawOnlineSeries(snaps);
   drawOnline24h(snaps);
   drawOnlineAvg(snaps);
