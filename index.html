@@ -794,7 +794,9 @@
   </section>
 
   <!-- MEMBERS -->
-  <!-- PRESENCE -->
+  <!-- PRESENCE — temporarily hidden. Data keeps being collected in presence.json,
+       renderPresence()/presenceStats() stay intact; uncomment to bring the card back. -->
+  <!--
   <h2>Who is online when</h2>
   <section class="a-card" id="presence-card">
     <div class="presence-controls">
@@ -827,6 +829,7 @@
       </div>
     </div>
   </section>
+  -->
 
   <h2>Members</h2>
   <section class="members-grid">
@@ -2314,7 +2317,7 @@ async function load() {
 }
 
 // presence controls: default to the current time, re-query on every change
-{
+if (document.getElementById("pr-time")) {
   const t = document.getElementById("pr-time");
   const now = new Date();
   t.value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
