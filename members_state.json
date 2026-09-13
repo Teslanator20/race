@@ -1,9 +1,9 @@
 {
-  "updated": "2026-09-13T07:10:35.450Z",
+  "updated": "2026-09-13T07:15:32.056Z",
   "left": {
     "name": "Sequoia",
     "prefix": "SEQ",
-    "online": 17,
+    "online": 14,
     "total": 149,
     "members": [
       {
@@ -132,8 +132,8 @@
         "uuid": "5c8c3075-d677-4b32-b92b-df0aad06eb2b",
         "rank": "chief",
         "joined": "2024-01-20T04:21:51.066000Z",
-        "online": true,
-        "server": "NA6",
+        "online": false,
+        "server": null,
         "contributed": 9638177089836,
         "contributionRank": 21,
         "guildRaidsTotal": 4110
@@ -671,8 +671,8 @@
         "uuid": "3fd99054-e0ac-4b45-90fb-fa194b9fae8f",
         "rank": "strategist",
         "joined": "2026-07-03T23:17:16.878000Z",
-        "online": true,
-        "server": "AS7",
+        "online": false,
+        "server": null,
         "contributed": 2871691257204,
         "contributionRank": 51,
         "guildRaidsTotal": 1119
@@ -902,9 +902,9 @@
         "uuid": "275160c0-9f14-4c05-9bf8-3d030a81fd49",
         "rank": "captain",
         "joined": "2026-08-18T04:01:35.935000Z",
-        "online": true,
-        "server": "AS8",
-        "contributed": 2972778174403,
+        "online": false,
+        "server": null,
+        "contributed": 2972778199403,
         "contributionRank": 49,
         "guildRaidsTotal": 1676
       },
@@ -1437,17 +1437,6 @@
         "guildRaidsTotal": 0
       },
       {
-        "username": "qozmet",
-        "uuid": "14362ae4-2a4d-4ec5-9119-a8296ddd6dc9",
-        "rank": "recruiter",
-        "joined": "2026-08-30T00:21:39.058000Z",
-        "online": true,
-        "server": "AS2",
-        "contributed": 82942743793,
-        "contributionRank": 126,
-        "guildRaidsTotal": 33
-      },
-      {
         "username": "UnknownEdge",
         "uuid": "ac98b60c-d3d1-4309-adbb-334731733539",
         "rank": "recruiter",
@@ -1558,6 +1547,17 @@
         "guildRaidsTotal": 77
       },
       {
+        "username": "qozmet",
+        "uuid": "14362ae4-2a4d-4ec5-9119-a8296ddd6dc9",
+        "rank": "recruit",
+        "joined": "2026-08-30T00:21:39.058000Z",
+        "online": true,
+        "server": "AS2",
+        "contributed": 82942743793,
+        "contributionRank": 126,
+        "guildRaidsTotal": 33
+      },
+      {
         "username": "HomelanderV1",
         "uuid": "dd5a6db8-eb31-43b5-93af-b78855a757cb",
         "rank": "recruit",
@@ -1650,7 +1650,7 @@
   "right": {
     "name": "Aequitas",
     "prefix": "Aeq",
-    "online": 6,
+    "online": 7,
     "total": 148,
     "members": [
       {
@@ -2857,8 +2857,8 @@
         "uuid": "fc89a9df-2831-4322-96f0-61325759fbc3",
         "rank": "recruiter",
         "joined": "2026-08-30T03:01:12.206000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "AS2",
         "contributed": 44101762171,
         "contributionRank": 107,
         "guildRaidsTotal": 29
