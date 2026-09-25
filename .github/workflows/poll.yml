@@ -15,6 +15,11 @@ concurrency:
 jobs:
   poll:
     runs-on: ubuntu-latest
+    env:
+      # Optional private tracking: set all three secrets to enable it. Their values are
+      # masked in the (public) logs, so neither the guilds nor the target repo show up here.
+      PRIVATE_REPO: ${{ secrets.PRIVATE_REPO }}
+      PRIVATE_GUILD_PREFIXES: ${{ secrets.PRIVATE_GUILD_PREFIXES }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +37,36 @@ jobs:
             git commit -m "chore: append race snapshot + state"
             for i in 1 2 3; do
               git pull --rebase origin main && git push && break
+              echo "Retry $i"
+              sleep 2
+            done
+          fi
+
+      # Runs after the race commit, so a failure here never costs a race snapshot.
+      - name: Checkout private data repo
+        if: ${{ !cancelled() && env.PRIVATE_REPO != '' }}
+        continue-on-error: true
+        id: private_checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.PRIVATE_REPO }}
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private
+      - name: Poll private guilds and push
+        if: ${{ !cancelled() && env.PRIVATE_REPO != '' && steps.private_checkout.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          node private-poll.js private/data
+          cd private
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -q -m "chore: append snapshot"
+            for i in 1 2 3; do
+              git pull -q --rebase && git push -q && break
               echo "Retry $i"
               sleep 2
             done

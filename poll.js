@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 
 const GUILDS_FILE       = "guilds.json";
 const HISTORY_FILE      = "snapshots.json";
@@ -365,4 +366,12 @@ async function main() {
   console.log(`OK season=${snapshot.season} L=${snapshot.left.seasonSr} R=${snapshot.right.seasonSr} gap=${gap} | online L=${snapshot.left.online}/${snapshot.left.memberCount} R=${snapshot.right.online}/${snapshot.right.memberCount} | snaps=${history.snapshots.length} events=${eventLog.events.length} presence=${Object.values(presence.guilds).reduce((n, g) => n + Object.values(g).reduce((k, m) => k + m.sessions.length, 0), 0)}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+// Only poll when run directly; private-poll.js imports the helpers above.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}
+
+export {
+  fetchJson, fetchRaidLeaderboards, summarize, pruneSnapshots, detectEvents,
+  updatePresence, loadJson, EVENTS_RETAIN_DAYS,
+};
