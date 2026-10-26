@@ -1,9 +1,9 @@
 {
-  "updated": "2026-10-26T07:40:30.923Z",
+  "updated": "2026-10-26T07:45:34.104Z",
   "left": {
     "name": "Sequoia",
     "prefix": "SEQ",
-    "online": 8,
+    "online": 7,
     "total": 146,
     "members": [
       {
@@ -573,7 +573,7 @@
         "rank": "strategist",
         "joined": "2026-08-18T04:01:35.935000Z",
         "online": true,
-        "server": "AS13",
+        "server": "AS1",
         "contributed": 4400997823460,
         "contributionRank": 36,
         "guildRaidsTotal": 2235
@@ -661,7 +661,7 @@
         "rank": "strategist",
         "joined": "2026-06-11T21:50:58.261000Z",
         "online": true,
-        "server": "NA5",
+        "server": "NA7",
         "contributed": 3053171721371,
         "contributionRank": 46,
         "guildRaidsTotal": 1187
@@ -716,7 +716,7 @@
         "rank": "strategist",
         "joined": "2026-07-16T17:00:48.189000Z",
         "online": true,
-        "server": "NA28",
+        "server": "NA7",
         "contributed": 2379253225734,
         "contributionRank": 54,
         "guildRaidsTotal": 3788
@@ -1078,8 +1078,8 @@
         "uuid": "21d5b676-5126-4f34-ae7c-77e320b3c14d",
         "rank": "captain",
         "joined": "2026-09-01T22:12:08.311000Z",
-        "online": true,
-        "server": "NA25",
+        "online": false,
+        "server": null,
         "contributed": 614251649781,
         "contributionRank": 80,
         "guildRaidsTotal": 399
@@ -1617,7 +1617,7 @@
   "right": {
     "name": "Aequitas",
     "prefix": "Aeq",
-    "online": 7,
+    "online": 8,
     "total": 139,
     "members": [
       {
@@ -1637,8 +1637,8 @@
         "rank": "chief",
         "joined": "2024-02-20T14:52:55.148000Z",
         "online": true,
-        "server": "AS13",
-        "contributed": 23618496766375,
+        "server": "AS1",
+        "contributed": 23621088545488,
         "contributionRank": 1,
         "guildRaidsTotal": 10209
       },
@@ -2149,6 +2149,17 @@
         "guildRaidsTotal": 597
       },
       {
+        "username": "JohnnyPescado",
+        "uuid": "d1c4e5c5-3ed5-443f-a3ea-b80b224981bc",
+        "rank": "captain",
+        "joined": "2026-09-11T20:22:42.142000Z",
+        "online": true,
+        "server": "AS1",
+        "contributed": 578232694448,
+        "contributionRank": 41,
+        "guildRaidsTotal": 709
+      },
+      {
         "username": "Ainsalt",
         "uuid": "05d566db-d03d-4833-bcbc-1bc95fac2603",
         "rank": "captain",
@@ -2156,19 +2167,8 @@
         "online": false,
         "server": null,
         "contributed": 578027591249,
-        "contributionRank": 41,
-        "guildRaidsTotal": 225
-      },
-      {
-        "username": "JohnnyPescado",
-        "uuid": "d1c4e5c5-3ed5-443f-a3ea-b80b224981bc",
-        "rank": "captain",
-        "joined": "2026-09-11T20:22:42.142000Z",
-        "online": true,
-        "server": "AS13",
-        "contributed": 575640915335,
         "contributionRank": 42,
-        "guildRaidsTotal": 709
+        "guildRaidsTotal": 225
       },
       {
         "username": "seffull",
@@ -2417,8 +2417,8 @@
         "uuid": "e70e6451-696f-4cc2-8b8b-4db58acc5b6a",
         "rank": "recruiter",
         "joined": "2026-10-20T17:17:26.419000Z",
-        "online": false,
-        "server": null,
+        "online": true,
+        "server": "AS13",
         "contributed": 72569815164,
         "contributionRank": 63,
         "guildRaidsTotal": 28
